@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Enable testing support
+enable_testing()
+
 if(MSVC)
     add_compile_options(/W4 /permissive-)
 else()
@@ -113,3 +116,79 @@ add_custom_command(TARGET wasteland2d POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:wasteland2d>/assets"
 )
+
+# --- tests (standalone executables, no assets needed) -----------------
+# Test helper: cross-platform temporary directory
+if(WIN32)
+    # Windows uses TEMP environment variable
+    if(DEFINED ENV{TEMP})
+        # Convert backslashes to forward slashes for C preprocessor
+        string(REPLACE "\\" "/" TEST_TMP_DIR "$ENV{TEMP}")
+    else()
+        set(TEST_TMP_DIR "C:/Temp")
+    endif()
+else()
+    set(TEST_TMP_DIR "/tmp")
+endif()
+
+# Helper function to add a test
+function(add_wasteland_test test_name source_file needs_game_headers)
+    add_executable(${test_name} ${source_file})
+    target_include_directories(${test_name} PRIVATE
+        "${CMAKE_SOURCE_DIR}/engine"
+    )
+    if(${needs_game_headers})
+        target_include_directories(${test_name} PRIVATE
+            "${CMAKE_SOURCE_DIR}/game"
+        )
+    endif()
+    target_compile_definitions(${test_name} PRIVATE TEST_TMP_DIR="${TEST_TMP_DIR}")
+    
+    # Add CTest test - run from project root so relative paths work
+    add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endfunction()
+
+# Headless tests (no external dependencies)
+add_wasteland_test(attachment_test tests/attachment_test.cpp FALSE)
+target_link_libraries(attachment_test PRIVATE engine)
+
+# JSON-dependent tests (need nlohmann_json)
+add_wasteland_test(inventory_test tests/inventory_test.cpp TRUE)
+target_link_libraries(inventory_test PRIVATE engine nlohmann_json::nlohmann_json)
+target_sources(inventory_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(equipment_test tests/equipment_test.cpp TRUE)
+target_link_libraries(equipment_test PRIVATE engine nlohmann_json::nlohmann_json)
+target_sources(equipment_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(encumbrance_test tests/encumbrance_test.cpp TRUE)
+target_link_libraries(encumbrance_test PRIVATE engine nlohmann_json::nlohmann_json)
+target_sources(encumbrance_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(dragdrop_test tests/dragdrop_test.cpp TRUE)
+target_link_libraries(dragdrop_test PRIVATE engine nlohmann_json::nlohmann_json)
+target_sources(dragdrop_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(useitem_test tests/useitem_test.cpp TRUE)
+target_link_libraries(useitem_test PRIVATE engine nlohmann_json::nlohmann_json)
+target_sources(useitem_test PRIVATE game/data/ItemDatabase.cpp)
+
+# Physics-dependent tests (need Box2D)
+add_wasteland_test(combat_test tests/combat_test.cpp TRUE)
+target_link_libraries(combat_test PRIVATE engine nlohmann_json::nlohmann_json box2d::box2d glm::glm)
+target_sources(combat_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(melee_test tests/melee_test.cpp TRUE)
+target_link_libraries(melee_test PRIVATE engine nlohmann_json::nlohmann_json box2d::box2d glm::glm)
+target_sources(melee_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(kill_scenario_test tests/kill_scenario_test.cpp TRUE)
+target_link_libraries(kill_scenario_test PRIVATE engine nlohmann_json::nlohmann_json box2d::box2d glm::glm)
+target_sources(kill_scenario_test PRIVATE game/data/ItemDatabase.cpp)
+
+add_wasteland_test(registry_reference_safety_test tests/registry_reference_safety_test.cpp FALSE)
+target_link_libraries(registry_reference_safety_test PRIVATE engine)
+
+# SDL-dependent tests
+add_wasteland_test(font_runtime_test tests/font_runtime_test.cpp FALSE)
+target_link_libraries(font_runtime_test PRIVATE engine SDL2::SDL2 SDL2_ttf::SDL2_ttf)

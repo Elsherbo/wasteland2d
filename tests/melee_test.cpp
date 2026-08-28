@@ -4,6 +4,7 @@
 // registry/physics/attacker — the attacker never moves or re-aims
 // within a block, so a target left alive from an earlier block would
 // otherwise keep getting hit by every later swing too.
+#define SDL_MAIN_HANDLED
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -16,6 +17,7 @@
 #include "components/MeleeWeapon.h"
 #include "data/ItemDatabase.h"
 #include "systems/MeleeCombatSystem.h"
+#include "test_common.h"
 
 namespace {
 void writeTestItemDatabase(const std::string& path) {
@@ -48,7 +50,7 @@ engine::ecs::Entity makeTarget(engine::ecs::Registry& registry, engine::physics:
 } // namespace
 
 int main() {
-    const std::string dbPath = "/tmp/melee_test_items.json";
+    const std::string dbPath = getTestTempPath("melee_test_items.json");
     writeTestItemDatabase(dbPath);
     game::data::ItemDatabase itemDb;
     itemDb.loadFromFile(dbPath);

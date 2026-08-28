@@ -12,6 +12,7 @@
 #include "data/ItemDatabase.h"
 #include "systems/InventorySystem.h"
 #include "ui/DragDropController.h"
+#include "test_common.h"
 
 using engine::ui::GridLayout;
 using game::components::Inventory;
@@ -57,7 +58,7 @@ int main() {
     }
 
     // --- DragDropController ---
-    const std::string dbPath = "/tmp/dragdrop_test_items.json";
+    const std::string dbPath = getTestTempPath("dragdrop_test_items.json");
     writeTestItemDatabase(dbPath);
     game::data::ItemDatabase db;
     db.loadFromFile(dbPath);

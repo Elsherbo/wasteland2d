@@ -3,11 +3,13 @@
 // bug did), kill something with a LootDrop (spawns a corpse -> emplaces
 // a second Inventory), and confirm the CORRECT (re-fetch) pattern still
 // reports accurate encumbrance afterward.
+#define SDL_MAIN_HANDLED
 #include <cassert>
 #include <cstdio>
 #include <fstream>
 
 #include "ecs/Registry.h"
+#include "ecs/Components.h"
 #include "physics/PhysicsWorld.h"
 #include "components/Health.h"
 #include "components/Inventory.h"
@@ -17,14 +19,17 @@
 #include "systems/CombatSystem.h"
 #include "systems/Encumbrance.h"
 #include "systems/InventorySystem.h"
+#include "test_common.h"
+#include <glm/vec2.hpp>
 
 int main() {
-    std::ofstream f("/tmp/kill_scenario_items.json");
+    const std::string dbPath = getTestTempPath("kill_scenario_items.json");
+    std::ofstream f(dbPath);
     f << R"([{"id": "bandage", "name": "Bandage", "width": 1, "height": 1, "maxStack": 5, "weight": 0.1, "category": "medical"}])";
     f.close();
 
     game::data::ItemDatabase db;
-    db.loadFromFile("/tmp/kill_scenario_items.json");
+    db.loadFromFile(dbPath);
 
     engine::ecs::Registry registry;
     engine::physics::PhysicsWorld physics;

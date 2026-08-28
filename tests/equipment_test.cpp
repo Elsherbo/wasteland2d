@@ -13,6 +13,7 @@
 #include "data/ItemDatabase.h"
 #include "systems/EquipmentSystem.h"
 #include "systems/InventorySystem.h"
+#include "test_common.h"
 
 using game::components::EquipmentSlots;
 using game::components::Inventory;
@@ -40,7 +41,7 @@ void writeTestItemDatabase(const std::string& path) {
 } // namespace
 
 int main() {
-    const std::string dbPath = "/tmp/equipment_test_items.json";
+    const std::string dbPath = getTestTempPath("equipment_test_items.json");
     writeTestItemDatabase(dbPath);
     game::data::ItemDatabase db;
     db.loadFromFile(dbPath);

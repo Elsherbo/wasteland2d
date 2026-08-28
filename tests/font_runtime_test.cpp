@@ -2,6 +2,7 @@
 // SDL_Renderer (via Xvfb), because the whole point is confirming
 // TTF_Init/IMG_Init/font loading/rasterization actually work at
 // runtime, not just that the headers compile.
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>

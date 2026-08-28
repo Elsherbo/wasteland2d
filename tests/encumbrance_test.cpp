@@ -9,6 +9,7 @@
 #include "data/ItemDatabase.h"
 #include "systems/Encumbrance.h"
 #include "systems/InventorySystem.h"
+#include "test_common.h"
 
 using game::components::Inventory;
 using game::systems::Encumbrance;
@@ -23,7 +24,7 @@ bool nearlyEqual(float a, float b, float eps = 1e-4f) { return std::fabs(a - b) 
 } // namespace
 
 int main() {
-    const std::string dbPath = "/tmp/encumbrance_test_items.json";
+    const std::string dbPath = getTestTempPath("encumbrance_test_items.json");
     writeTestItemDatabase(dbPath);
     game::data::ItemDatabase db;
     db.loadFromFile(dbPath);

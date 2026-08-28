@@ -1,11 +1,13 @@
 // Standalone, no-SDL test of CombatSystem's hitscan/damage/death/
 // cooldown/corpse-spawn logic against a real PhysicsWorld — same style
 // as the existing Milestone 2/3 headless tests the README references.
+#define SDL_MAIN_HANDLED
 #include <cassert>
 #include <cstdio>
 #include <fstream>
 
 #include "ecs/Registry.h"
+#include "ecs/Components.h"
 #include "physics/PhysicsWorld.h"
 #include "components/Health.h"
 #include "components/Inventory.h"
@@ -15,6 +17,7 @@
 #include "data/ItemDatabase.h"
 #include "systems/CombatSystem.h"
 #include "systems/InventorySystem.h"
+#include "test_common.h"
 
 namespace {
 void writeTestItemDatabase(const std::string& path) {
@@ -26,7 +29,7 @@ void writeTestItemDatabase(const std::string& path) {
 } // namespace
 
 int main() {
-    const std::string dbPath = "/tmp/combat_test_items.json";
+    const std::string dbPath = getTestTempPath("combat_test_items.json");
     writeTestItemDatabase(dbPath);
     game::data::ItemDatabase itemDb;
     itemDb.loadFromFile(dbPath);
