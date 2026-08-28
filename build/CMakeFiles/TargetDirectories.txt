@@ -1,4 +1,0 @@
-D:/coding/cpp/wasteland2d/build/CMakeFiles/engine.dir
-D:/coding/cpp/wasteland2d/build/CMakeFiles/wasteland2d.dir
-D:/coding/cpp/wasteland2d/build/CMakeFiles/ALL_BUILD.dir
-D:/coding/cpp/wasteland2d/build/CMakeFiles/ZERO_CHECK.dir
