@@ -204,6 +204,9 @@ target_link_libraries(entityfactory_test PRIVATE engine)
 add_wasteland_test(systemregistry_test tests/systemregistry_test.cpp FALSE)
 target_link_libraries(systemregistry_test PRIVATE engine)
 
+add_wasteland_test(ui_component_test tests/ui_component_test.cpp TRUE)
+target_link_libraries(ui_component_test PRIVATE engine)
+
 # SDL-dependent tests
 add_wasteland_test(font_runtime_test tests/font_runtime_test.cpp FALSE)
 target_link_libraries(font_runtime_test PRIVATE engine SDL2::SDL2 SDL2_ttf::SDL2_ttf)
