@@ -1,0 +1,32 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "maps/sample_map2.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "maps/sample_map2.tmx": {
+            "scale": 1.0647916666666666,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 480.84523576599497,
+                "y": 320.2504402269615
+            }
+        },
+        "maps/sample_map2.tmx#placeholder_tileset2": {
+            "scaleInDock": 1
+        }
+    },
+    "last.imagePath": "D:/coding/cpp/wasteland2d/assets/tilesets",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+        "maps/sample_map2.tmx"
+    ],
+    "project": "untitled.tiled-project",
+    "recentFiles": [
+        "maps/sample_map2.tmx"
+    ],
+    "tileset.embedInMap": true
+}

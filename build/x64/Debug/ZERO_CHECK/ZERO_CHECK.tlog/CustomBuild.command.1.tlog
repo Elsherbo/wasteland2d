@@ -1,0 +1,10 @@
+^D:\CODING\CPP\WASTELAND2D\BUILD\CMAKEFILES\C017CD9652CD25B888F470D053995329\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/coding/cpp/wasteland2d -BD:/coding/cpp/wasteland2d/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/coding/cpp/wasteland2d/build/wasteland2d.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
