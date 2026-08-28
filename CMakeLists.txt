@@ -98,7 +98,7 @@ add_library(engine STATIC ${ENGINE_SOURCES})
 target_include_directories(engine PUBLIC
     "${CMAKE_SOURCE_DIR}/engine"
 )
-target_link_libraries(engine PUBLIC SDL2::SDL2 SDL2_image::SDL2_image SDL2_ttf::SDL2_ttf tinyxml2::tinyxml2 glm::glm box2d::box2d)
+target_link_libraries(engine PUBLIC SDL2::SDL2 SDL2_image::SDL2_image SDL2_ttf::SDL2_ttf tinyxml2::tinyxml2 glm::glm box2d::box2d nlohmann_json::nlohmann_json)
 
 # --- game (this specific game, executable) -----------------------------
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
@@ -191,6 +191,9 @@ target_link_libraries(registry_reference_safety_test PRIVATE engine)
 
 add_wasteland_test(eventbus_test tests/eventbus_test.cpp TRUE)
 target_link_libraries(eventbus_test PRIVATE engine)
+
+add_wasteland_test(servicelocator_test tests/servicelocator_test.cpp TRUE)
+target_link_libraries(servicelocator_test PRIVATE engine)
 
 # SDL-dependent tests
 add_wasteland_test(font_runtime_test tests/font_runtime_test.cpp FALSE)
