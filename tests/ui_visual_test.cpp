@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <glm/vec2.hpp>
+#include <functional>
 #include <iostream>
 #include <memory>
 
@@ -125,35 +126,103 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
+            } else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    running = false;
+                }
+            } else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    running = false;
+                }
             } else if (event.type == SDL_MOUSEMOTION) {
-                // Update hover state
+                // Update hover state for all components
                 int mouseX = event.motion.x;
                 int mouseY = event.motion.y;
+                glm::vec2 mousePos(mouseX, mouseY);
                 
-                if (root->containsPoint(glm::vec2(mouseX, mouseY))) {
-                    root->setState(engine::ui::UIState::Hover);
-                } else {
-                    root->setState(engine::ui::UIState::Normal);
-                }
+                // Reset all to normal first
+                std::function<void(engine::ui::UIComponent*)> resetState = [&](engine::ui::UIComponent* comp) {
+                    if (comp->isInteractable()) {
+                        comp->setState(engine::ui::UIState::Normal);
+                    }
+                    for (auto* child : comp->getChildren()) {
+                        resetState(child);
+                    }
+                };
+                resetState(root);
+                
+                // Set hover for components under mouse
+                std::function<void(engine::ui::UIComponent*)> setHover = [&](engine::ui::UIComponent* comp) {
+                    if (comp->isInteractable() && comp->containsPoint(mousePos)) {
+                        comp->setState(engine::ui::UIState::Hover);
+                    }
+                    for (auto* child : comp->getChildren()) {
+                        setHover(child);
+                    }
+                };
+                setHover(root);
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     int mouseX = event.button.x;
                     int mouseY = event.button.y;
+                    glm::vec2 mousePos(mouseX, mouseY);
                     
-                    if (root->containsPoint(glm::vec2(mouseX, mouseY))) {
-                        root->setState(engine::ui::UIState::Active);
-                    }
+                    // Set active for components under mouse
+                    std::function<void(engine::ui::UIComponent*)> setActive = [&](engine::ui::UIComponent* comp) {
+                        if (comp->isInteractable() && comp->containsPoint(mousePos)) {
+                            comp->setState(engine::ui::UIState::Active);
+                            
+                            // Test button click
+                            if (auto* button = dynamic_cast<engine::ui::UIButton*>(comp)) {
+                                std::cout << "Button clicked: " << button->getText() << std::endl;
+                                if (button->isToggleMode()) {
+                                    button->setToggled(!button->isToggled());
+                                }
+                            }
+                            
+                            // Test checkbox toggle
+                            if (auto* checkbox = dynamic_cast<engine::ui::UICheckbox*>(comp)) {
+                                checkbox->setChecked(!checkbox->isChecked());
+                                std::cout << "Checkbox toggled: " << (checkbox->isChecked() ? "checked" : "unchecked") << std::endl;
+                            }
+                            
+                            // Test slider drag
+                            if (auto* slider = dynamic_cast<engine::ui::UISlider*>(comp)) {
+                                glm::vec2 pos = comp->getWorldPosition();
+                                glm::vec2 size = comp->getWorldSize();
+                                float relativeX = (mouseX - pos.x) / size.x;
+                                if (relativeX < 0.0f) relativeX = 0.0f;
+                                if (relativeX > 1.0f) relativeX = 1.0f;
+                                slider->setValue(relativeX);
+                                std::cout << "Slider value: " << slider->getValue() << std::endl;
+                            }
+                        }
+                        for (auto* child : comp->getChildren()) {
+                            setActive(child);
+                        }
+                    };
+                    setActive(root);
                 }
             } else if (event.type == SDL_MOUSEBUTTONUP) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     int mouseX = event.button.x;
                     int mouseY = event.button.y;
+                    glm::vec2 mousePos(mouseX, mouseY);
                     
-                    if (root->containsPoint(glm::vec2(mouseX, mouseY))) {
-                        root->setState(engine::ui::UIState::Hover);
-                    } else {
-                        root->setState(engine::ui::UIState::Normal);
-                    }
+                    // Reset to hover for components under mouse
+                    std::function<void(engine::ui::UIComponent*)> resetToHover = [&](engine::ui::UIComponent* comp) {
+                        if (comp->isInteractable()) {
+                            if (comp->containsPoint(mousePos)) {
+                                comp->setState(engine::ui::UIState::Hover);
+                            } else {
+                                comp->setState(engine::ui::UIState::Normal);
+                            }
+                        }
+                        for (auto* child : comp->getChildren()) {
+                            resetToHover(child);
+                        }
+                    };
+                    resetToHover(root);
                 }
             }
         }
