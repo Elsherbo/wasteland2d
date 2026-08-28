@@ -189,6 +189,9 @@ target_sources(kill_scenario_test PRIVATE game/data/ItemDatabase.cpp)
 add_wasteland_test(registry_reference_safety_test tests/registry_reference_safety_test.cpp FALSE)
 target_link_libraries(registry_reference_safety_test PRIVATE engine)
 
+add_wasteland_test(eventbus_test tests/eventbus_test.cpp TRUE)
+target_link_libraries(eventbus_test PRIVATE engine)
+
 # SDL-dependent tests
 add_wasteland_test(font_runtime_test tests/font_runtime_test.cpp FALSE)
 target_link_libraries(font_runtime_test PRIVATE engine SDL2::SDL2 SDL2_ttf::SDL2_ttf)
