@@ -4,11 +4,6 @@
 
 namespace engine {
 
-// Forward declarations
-namespace render {
-    class Renderer;
-}
-
 // Base class for all scenes
 // Scenes represent different game states (menu, game, pause, etc.)
 class Scene {
@@ -25,7 +20,7 @@ public:
     virtual void update(double dt) = 0;
     
     // Called every frame for rendering
-    virtual void render(render::Renderer& renderer) = 0;
+    virtual void render() = 0;
     
     // Get scene name (for debugging)
     virtual const char* getName() const = 0;

@@ -36,7 +36,7 @@ public:
     void update(double dt);
     
     // Render the current scene
-    void render(render::Renderer& renderer);
+    void render();
     
     // Get scene stack size
     size_t sceneCount() const;

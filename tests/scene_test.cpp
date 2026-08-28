@@ -5,14 +5,6 @@
 #include <iostream>
 #include <memory>
 
-// Mock renderer for testing
-namespace engine::render {
-    class Renderer {
-    public:
-        Renderer() = default;
-    };
-}
-
 // Mock scene for testing
 class TestScene : public engine::Scene {
 public:
@@ -32,9 +24,8 @@ public:
         updateCount_++;
     }
     
-    void render(engine::render::Renderer& renderer) override {
+    void render() override {
         renderCount_++;
-        (void)renderer; // Suppress unused warning
     }
     
     const char* getName() const override { return name_; }

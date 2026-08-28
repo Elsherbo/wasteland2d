@@ -90,9 +90,9 @@ void SceneManager::update(double dt) {
     }
 }
 
-void SceneManager::render(render::Renderer& renderer) {
+void SceneManager::render() {
     if (Scene* scene = currentScene()) {
-        scene->render(renderer);
+        scene->render();
     }
 }
 
