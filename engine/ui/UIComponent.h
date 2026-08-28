@@ -45,6 +45,10 @@ public:
     const glm::vec2& getSize() const { return size_; }
     void setSize(const glm::vec2& size) { size_ = size; setDirty(); }
     
+    // World transform (includes parent transform)
+    glm::vec2 getWorldPosition() const;
+    glm::vec2 getWorldSize() const;
+    
     const glm::vec2& getAnchor() const { return anchor_; }
     void setAnchor(const glm::vec2& anchor) { anchor_ = anchor; setDirty(); }
     
@@ -85,12 +89,6 @@ public:
 protected:
     // State change callback
     virtual void onStateChanged(UIState oldState, UIState newState);
-    
-    // Calculate world position based on anchor
-    glm::vec2 getWorldPosition() const;
-    
-    // Calculate world size
-    glm::vec2 getWorldSize() const;
 
 private:
     // Transform
