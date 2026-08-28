@@ -9,9 +9,16 @@ namespace engine {
 
 Application::Application(ApplicationConfig config)
     : config_(std::move(config)), clock_(config_.fixedUpdateHz) {
+    // Initialize logger first
+    Logger::init(config_.loggerConfig);
+    LOG_INFO(LogCategory::Core, "Initializing application");
+    
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
-        throw std::runtime_error(std::string("SDL_Init failed: ") + SDL_GetError());
+        std::string error = std::string("SDL_Init failed: ") + SDL_GetError();
+        LOG_FATAL(LogCategory::Core, error.c_str());
+        throw std::runtime_error(error);
     }
+    LOG_INFO(LogCategory::Core, "SDL initialized successfully");
 
     // SDL2_image can lazily auto-init a format's support on first use
     // (which is why texture loading has worked without this call so
@@ -22,28 +29,38 @@ Application::Application(ApplicationConfig config)
     // adding the equivalent (mandatory, not just best-practice) call
     // for SDL_ttf below and fixed alongside it, same file, same reason.
     if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) == 0) {
+        std::string error = std::string("IMG_Init failed: ") + IMG_GetError();
+        LOG_FATAL(LogCategory::Core, error.c_str());
         SDL_Quit();
-        throw std::runtime_error(std::string("IMG_Init failed: ") + IMG_GetError());
+        throw std::runtime_error(error);
     }
+    LOG_INFO(LogCategory::Core, "SDL_image initialized successfully");
 
     // Unlike IMG_Init, this one is not optional — TTF_OpenFont() (see
     // engine::render::Font) fails outright if TTF_Init() was never
     // called; SDL_ttf has no lazy-init fallback the way SDL2_image
     // does.
     if (TTF_Init() != 0) {
+        std::string error = std::string("TTF_Init failed: ") + TTF_GetError();
+        LOG_FATAL(LogCategory::Core, error.c_str());
         IMG_Quit();
         SDL_Quit();
-        throw std::runtime_error(std::string("TTF_Init failed: ") + TTF_GetError());
+        throw std::runtime_error(error);
     }
+    LOG_INFO(LogCategory::Core, "SDL_ttf initialized successfully");
 
     window_ = std::make_unique<Window>(config_.title, config_.width, config_.height);
+    std::string windowInfo = "Window created: " + std::to_string(config_.width) + "x" + std::to_string(config_.height);
+    LOG_INFO(LogCategory::Core, windowInfo.c_str());
 }
 
 Application::~Application() {
+    LOG_INFO(LogCategory::Core, "Shutting down application");
     window_.reset();
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
+    Logger::shutdown();
 }
 
 void Application::run() {

@@ -6,6 +6,7 @@
 
 #include "core/Time.h"
 #include "core/Window.h"
+#include "core/Logger.h"
 #include "input/InputManager.h"
 
 namespace engine {
@@ -15,6 +16,7 @@ struct ApplicationConfig {
     int width = 1280;
     int height = 720;
     double fixedUpdateHz = 60.0;
+    LoggerConfig loggerConfig; // Logger configuration
 };
 
 // Owns the SDL lifecycle, window, input, and the fixed-timestep loop.

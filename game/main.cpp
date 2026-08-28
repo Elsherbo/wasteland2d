@@ -9,10 +9,12 @@
 #include <cstdio>
 #include <optional>
 #include <tuple>
+#include <sstream>
 #include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 
 #include "core/Application.h"
+#include "core/Logger.h"
 #include "ecs/Attachment.h"
 #include "ecs/AttachmentSystem.h"
 #include "ecs/Components.h"
@@ -232,6 +234,13 @@ int main(int, char**) {
     config.width = 1280;
     config.height = 720;
     config.fixedUpdateHz = 60.0;
+    
+    // Configure logger
+    config.loggerConfig.level = engine::LogLevel::Info;
+    config.loggerConfig.enableColors = true;
+    config.loggerConfig.enableFileOutput = false; // Enable true for file logging
+    config.loggerConfig.enableTimestamps = true;
+    config.loggerConfig.enableCategories = true;
 
     engine::Application app(config);
 
@@ -660,9 +669,11 @@ int main(int, char**) {
                 }
                 if (!swingResult.hitEntities.empty()) {
                     screenShake.trigger(swingResult.killedAny ? 7.0 : 3.0, swingResult.killedAny ? 0.14 : 0.07);
-                    std::printf("[combat] melee hit %zu target(s) for %.0f damage%s\n",
-                                swingResult.hitEntities.size(), static_cast<double>(swingResult.totalDamageDealt),
-                                swingResult.killedAny ? " -- target down" : "");
+                    std::ostringstream msg;
+                    msg << "melee hit " << swingResult.hitEntities.size() << " target(s) for " 
+                        << swingResult.totalDamageDealt << " damage";
+                    if (swingResult.killedAny) msg << " -- target down";
+                    LOG_INFO(engine::LogCategory::Combat, msg.str().c_str());
                 }
             } else {
                 auto fireResult =
@@ -680,10 +691,12 @@ int main(int, char**) {
                 if (fireResult.hit) {
                     screenShake.trigger(fireResult.killedTarget ? 7.0 : 3.0, fireResult.killedTarget ? 0.14 : 0.07);
                     if (fireResult.damageDealt > 0.0f) {
-                        std::printf("[combat] hit for %.0f damage%s\n", fireResult.damageDealt,
-                                    fireResult.killedTarget ? " -- target down" : "");
+                        std::ostringstream msg;
+                        msg << "hit for " << fireResult.damageDealt << " damage";
+                        if (fireResult.killedTarget) msg << " -- target down";
+                        LOG_INFO(engine::LogCategory::Combat, msg.str().c_str());
                     } else {
-                        std::printf("[combat] shot hit environment\n");
+                        LOG_INFO(engine::LogCategory::Combat, "shot hit environment");
                     }
                 }
             }
@@ -701,9 +714,9 @@ int main(int, char**) {
             if (other != engine::ecs::kNullEntity && registry.has<engine::physics::Interactable>(other)) {
                 const auto& interactable = registry.get<engine::physics::Interactable>(other);
                 if (event.began) {
-                    std::printf("[interact] %s\n", interactable.promptText.c_str());
+                    LOG_INFO(engine::LogCategory::Physics, interactable.promptText.c_str());
                 } else {
-                    std::printf("[interact] (out of range)\n");
+                    LOG_INFO(engine::LogCategory::Physics, "(out of range)");
                 }
             }
         }
@@ -737,7 +750,7 @@ int main(int, char**) {
                 }
                 auto& lootInventory = registry.get<game::components::Inventory>(other);
                 if (lootInventory.stacks.empty()) {
-                    std::printf("[loot] nothing left to take\n");
+                    LOG_INFO(engine::LogCategory::Inventory, "nothing left to take");
                     continue;
                 }
 
@@ -747,11 +760,14 @@ int main(int, char**) {
                 int stacksLeft = static_cast<int>(lootInventory.stacks.size());
 
                 if (stacksLeft == 0) {
-                    std::printf("[loot] took everything (%d stack%s)\n", stacksBefore,
-                                stacksBefore == 1 ? "" : "s");
+                    std::ostringstream msg;
+                    msg << "took everything (" << stacksBefore << " stack" << (stacksBefore == 1 ? "" : "s") << ")";
+                    LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                 } else {
-                    std::printf("[loot] took what fit -- %d stack%s left behind (inventory full or too heavy)\n",
-                                stacksLeft, stacksLeft == 1 ? "" : "s");
+                    std::ostringstream msg;
+                    msg << "took what fit -- " << stacksLeft << " stack" << (stacksLeft == 1 ? "" : "s") 
+                        << " left behind (inventory full or too heavy)";
+                    LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                 }
             }
         }
@@ -840,19 +856,19 @@ int main(int, char**) {
                         bool equipped = game::systems::EquipmentSystem::equip(*inv, playerEquipment, itemDb,
                                                                                *pressedSlot, cell.first, cell.second);
                         if (equipped) {
-                            std::printf("[equip] equipped\n");
+                            LOG_INFO(engine::LogCategory::Inventory, "equipped");
                             if (playerEquipment.activeSlot == *pressedSlot) {
                                 game::systems::EquipmentSystem::syncActiveWeapon(registry, player, playerEquipment,
                                                                                   itemDb);
                             }
                         } else {
-                            std::printf("[equip] can't equip that there -- wrong type for this slot\n");
+                            LOG_WARNING(engine::LogCategory::Inventory, "can't equip that there -- wrong type for this slot");
                         }
                     } else {
                         bool unequipped = game::systems::EquipmentSystem::unequip(
                             registry.get<game::components::Inventory>(player), playerEquipment, itemDb, *pressedSlot);
                         if (unequipped) {
-                            std::printf("[equip] unequipped\n");
+                            LOG_INFO(engine::LogCategory::Inventory, "unequipped");
                             if (playerEquipment.activeSlot == *pressedSlot) {
                                 game::systems::EquipmentSystem::syncActiveWeapon(registry, player, playerEquipment,
                                                                                   itemDb);
@@ -887,13 +903,16 @@ int main(int, char**) {
                         // Backpack is never the active slot, so there's
                         // no live Weapon/MeleeWeapon component to
                         // refresh.
-                        std::printf(equipped ? "[equip] backpack equipped\n"
-                                              : "[equip] can't equip that as a backpack\n");
+                        if (equipped) {
+                            LOG_INFO(engine::LogCategory::Inventory, "backpack equipped");
+                        } else {
+                            LOG_WARNING(engine::LogCategory::Inventory, "can't equip that as a backpack");
+                        }
                     } else {
                         bool unequipped = game::systems::EquipmentSystem::unequip(
                             registry.get<game::components::Inventory>(player), playerEquipment, itemDb,
                             game::components::EquipmentSlots::Slot::Backpack);
-                        if (unequipped) std::printf("[equip] backpack unequipped\n");
+                        if (unequipped) LOG_INFO(engine::LogCategory::Inventory, "backpack unequipped");
                     }
                 }
 
@@ -925,7 +944,9 @@ int main(int, char**) {
                                 if (def && def->useEffect.has_value()) {
                                     playerQuickSlots.itemIds[static_cast<std::size_t>(quickSlotIndex)] = stack.itemId;
                                     assigned = true;
-                                    std::printf("[quickslot] bound key %d\n", quickSlotIndex + 4);
+                                    std::ostringstream msg;
+                                    msg << "bound key " << (quickSlotIndex + 4);
+                                    LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                                 }
                             }
                         }
@@ -933,7 +954,9 @@ int main(int, char**) {
                             auto& slot = playerQuickSlots.itemIds[static_cast<std::size_t>(quickSlotIndex)];
                             if (!slot.empty()) {
                                 slot.clear();
-                                std::printf("[quickslot] cleared key %d\n", quickSlotIndex + 4);
+                                std::ostringstream msg;
+                                msg << "cleared key " << (quickSlotIndex + 4);
+                                LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                             }
                         }
                     }
@@ -961,7 +984,9 @@ int main(int, char**) {
                 playerEquipment.activeSlot = newActive;
                 game::systems::EquipmentSystem::syncActiveWeapon(registry, player, playerEquipment, itemDb);
                 const char* slotNames[] = {"primary", "secondary", "melee"};
-                std::printf("[equip] switched to %s\n", slotNames[static_cast<int>(newActive)]);
+                std::ostringstream msg;
+                msg << "switched to " << slotNames[static_cast<int>(newActive)];
+                LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
             }
 
             // Quick-slot use — 4..9 with the inventory closed. Console
@@ -982,9 +1007,13 @@ int main(int, char**) {
                     usedSlotIndex);
                 if (useResult.used) {
                     if (useResult.healedAmount > 0.0f) {
-                        std::printf("[use] healed %.0f\n", static_cast<double>(useResult.healedAmount));
+                        std::ostringstream msg;
+                        msg << "healed " << useResult.healedAmount;
+                        LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                     } else {
-                        std::printf("[use] used item in slot %d\n", usedSlotIndex + 4);
+                        std::ostringstream msg;
+                        msg << "used item in slot " << (usedSlotIndex + 4);
+                        LOG_INFO(engine::LogCategory::Inventory, msg.str().c_str());
                     }
                 }
             }
