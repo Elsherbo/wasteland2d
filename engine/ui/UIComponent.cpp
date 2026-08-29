@@ -38,7 +38,7 @@ void UIComponent::render(Renderer& renderer) {
     }
 }
 
-bool UIComponent::handleInput(const InputEvent& event) {
+bool UIComponent::handleInput(const InputEventLegacy& event) {
     // Pass input to children (reverse order for top-most first)
     for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
         if ((*it)->isVisible() && (*it)->isInteractable()) {
@@ -55,6 +55,11 @@ void UIComponent::layout() {
     for (auto* child : children_) {
         child->layout();
     }
+}
+
+void UIComponent::guiInput(const InputEvent& event) {
+    // Base implementation - can be overridden in subclasses
+    (void)event;
 }
 
 void UIComponent::onStateChanged(UIState oldState, UIState newState) {

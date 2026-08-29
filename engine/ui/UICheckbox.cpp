@@ -29,37 +29,43 @@ void UICheckbox::render(Renderer& renderer) {
     // 4. Apply style states
 }
 
-bool UICheckbox::handleInput(const InputEvent& event) {
+void UICheckbox::guiInput(const InputEvent& event) {
     if (!isInteractable() || getState() == UIState::Disabled) {
-        return false;
+        return;
     }
     
-    bool isOver = containsPoint(event.mousePosition);
+    if (!event.isMouseButton()) return;
     
-    if (event.mouseDown && isOver) {
+    const auto* mouseData = event.getMouseData();
+    if (!mouseData) return;
+    
+    bool isOver = containsPoint(mouseData->position);
+    
+    if (mouseData->pressed && isOver) {
         setState(UIState::Active);
-        return true;
+        acceptEvent();
+        return;
     }
     
-    if (event.mouseUp && isOver) {
+    if (!mouseData->pressed && isOver && getState() == UIState::Active) {
         setChecked(!checked_);
         setState(UIState::Hover);
-        return true;
+        acceptEvent();
+        return;
     }
     
-    if (event.mouseUp && !isOver) {
+    if (!mouseData->pressed && !isOver && getState() == UIState::Active) {
         setState(UIState::Normal);
-        return true;
+        acceptEvent();
+        return;
     }
     
     // Update hover state
-    if (isOver) {
+    if (isOver && getState() != UIState::Active) {
         setState(UIState::Hover);
-    } else {
+    } else if (!isOver && getState() != UIState::Active) {
         setState(UIState::Normal);
     }
-    
-    return false;
 }
 
 } // namespace engine::ui

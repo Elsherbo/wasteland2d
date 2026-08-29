@@ -7,6 +7,7 @@
 #include "UIComponent.h"
 #include "UIStyle.h"
 #include "UILayer.h"
+#include "InputEvent.h"
 
 namespace engine::ui {
 
@@ -44,8 +45,9 @@ public:
     // State management
     void updateStates(double dt);
     
-    // Input routing
-    bool handleInput(const InputEvent& event);
+    // Input routing (Godot-style)
+    void dispatchInput(const InputEvent& event);
+    bool handleInput(const InputEventLegacy& event);  // Legacy, for backward compatibility
     
     // Rendering
     void render(Renderer& renderer);

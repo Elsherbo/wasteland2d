@@ -38,7 +38,7 @@ void UILayer::render(Renderer& renderer) {
     }
 }
 
-bool UILayer::handleInput(const InputEvent& event) {
+bool UILayer::handleInput(const InputEventLegacy& event) {
     if (!visible_) return false;
     
     // Pass input to components (reverse order for top-most first)
@@ -103,7 +103,7 @@ void UILayerManager::updateAll(double dt) {
     }
 }
 
-bool UILayerManager::handleInput(const InputEvent& event) {
+bool UILayerManager::handleInput(const InputEventLegacy& event) {
     // Pass input to layers in reverse order (top-most first)
     for (auto it = layers_.rbegin(); it != layers_.rend(); ++it) {
         if ((*it)->isVisible()) {

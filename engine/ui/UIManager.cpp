@@ -61,7 +61,62 @@ void UIManager::updateStates(double dt) {
     (void)dt;
 }
 
-bool UIManager::handleInput(const InputEvent& event) {
+void UIManager::dispatchInput(const InputEvent& event) {
+    // Godot-style event dispatching
+    // 1. Reset event accepted flags
+    std::function<void(UIComponent*)> resetFlags = [&](UIComponent* comp) {
+        comp->resetEventAccepted();
+        for (auto* child : comp->getChildren()) {
+            resetFlags(child);
+        }
+    };
+    
+    const auto& layers = layerManager_.getLayers();
+    for (auto* layer : layers) {
+        if (layer->isVisible()) {
+            for (auto* comp : layer->getComponents()) {
+                resetFlags(comp);
+            }
+        }
+    }
+    
+    // 2. Dispatch to components in z-order (top-most first)
+    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+        if (!(*it)->isVisible()) continue;
+        
+        const auto& components = (*it)->getComponents();
+        for (auto compIt = components.rbegin(); compIt != components.rend(); ++compIt) {
+            UIComponent* comp = *compIt;
+            if (!comp->isVisible() || !comp->isInteractable()) continue;
+            
+            // Check mouse filter
+            if (event.isMouseMotion() || event.isMouseButton()) {
+                if (comp->getMouseFilter() == MouseFilter::Stop) continue;
+            }
+            
+            // Check if event is within component bounds
+            if (event.isMouseMotion() || event.isMouseButton()) {
+                const auto* mouseData = event.getMouseData();
+                if (mouseData && !comp->containsPoint(mouseData->position)) continue;
+            }
+            
+            // Call guiInput
+            comp->guiInput(event);
+            
+            // If event was accepted, stop propagation
+            if (comp->isEventAccepted()) {
+                return;
+            }
+            
+            // If mouse filter is Ignore, stop propagation even if not accepted
+            if (event.isMouseMotion() || event.isMouseButton()) {
+                if (comp->getMouseFilter() == MouseFilter::Ignore) return;
+            }
+        }
+    }
+}
+
+bool UIManager::handleInput(const InputEventLegacy& event) {
     return layerManager_.handleInput(event);
 }
 

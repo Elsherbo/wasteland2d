@@ -16,6 +16,8 @@
 #include "ui/UIHBox.h"
 #include "ui/UIGrid.h"
 #include "ui/UIRenderer.h"
+#include "ui/UIManager.h"
+#include "ui/InputEvent.h"
 #include "render/Font.h"
 #include "render/TextRenderer.h"
 #include "render/Color.h"
@@ -74,6 +76,12 @@ int main(int argc, char* argv[]) {
     // Create UI renderer
     engine::ui::UIRenderer uiRenderer(renderer, textRenderer, font);
     
+    // Create UI manager
+    engine::ui::UIManager uiManager;
+    
+    // Get UI layer
+    engine::ui::UILayer* uiLayer = uiManager.getLayer("UI");
+    
     // Create UI hierarchy
     auto vbox = std::make_unique<engine::ui::UIVBox>();
     vbox->setPosition(glm::vec2(50, 50));
@@ -91,18 +99,27 @@ int main(int argc, char* argv[]) {
     auto button = std::make_unique<engine::ui::UIButton>();
     button->setText("Click Me");
     button->setSize(glm::vec2(280, 40));
+    button->onClick = []() {
+        std::cout << "Button clicked!" << std::endl;
+    };
     vbox->addChild(std::move(button));
     
     // Add checkbox
     auto checkbox = std::make_unique<engine::ui::UICheckbox>();
     checkbox->setText("Enable Feature");
     checkbox->setSize(glm::vec2(280, 30));
+    checkbox->onCheckedChanged = [](bool checked) {
+        std::cout << "Checkbox: " << (checked ? "checked" : "unchecked") << std::endl;
+    };
     vbox->addChild(std::move(checkbox));
     
     // Add slider
     auto slider = std::make_unique<engine::ui::UISlider>();
     slider->setSize(glm::vec2(280, 20));
     slider->setValue(0.5f);
+    slider->onValueChanged = [](float value) {
+        std::cout << "Slider value: " << value << std::endl;
+    };
     vbox->addChild(std::move(slider));
     
     // Add image
@@ -114,8 +131,12 @@ int main(int argc, char* argv[]) {
     // Layout the container
     vbox->layout();
     
-    // Get raw pointer for rendering
-    engine::ui::UIComponent* root = vbox.get();
+    // Add to UI layer
+    uiLayer->addComponent(vbox.get());
+    
+    // Keep ownership in a container
+    std::vector<std::unique_ptr<engine::ui::UIComponent>> components;
+    components.push_back(std::move(vbox));
     
     // Main loop
     bool running = true;
@@ -135,104 +156,44 @@ int main(int argc, char* argv[]) {
                     running = false;
                 }
             } else if (event.type == SDL_MOUSEMOTION) {
-                // Update hover state for all components
-                int mouseX = event.motion.x;
-                int mouseY = event.motion.y;
-                glm::vec2 mousePos(mouseX, mouseY);
-                
-                // Reset all to normal first
-                std::function<void(engine::ui::UIComponent*)> resetState = [&](engine::ui::UIComponent* comp) {
-                    if (comp->isInteractable()) {
-                        comp->setState(engine::ui::UIState::Normal);
-                    }
-                    for (auto* child : comp->getChildren()) {
-                        resetState(child);
-                    }
-                };
-                resetState(root);
-                
-                // Set hover for components under mouse
-                std::function<void(engine::ui::UIComponent*)> setHover = [&](engine::ui::UIComponent* comp) {
-                    if (comp->isInteractable() && comp->containsPoint(mousePos)) {
-                        comp->setState(engine::ui::UIState::Hover);
-                    }
-                    for (auto* child : comp->getChildren()) {
-                        setHover(child);
-                    }
-                };
-                setHover(root);
+                // Convert SDL event to InputEvent
+                engine::ui::InputEvent inputEvent = engine::ui::InputEvent::mouseMotion(
+                    static_cast<float>(event.motion.x),
+                    static_cast<float>(event.motion.y),
+                    static_cast<float>(event.motion.xrel),
+                    static_cast<float>(event.motion.yrel)
+                );
+                uiManager.dispatchInput(inputEvent);
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    int mouseX = event.button.x;
-                    int mouseY = event.button.y;
-                    glm::vec2 mousePos(mouseX, mouseY);
-                    
-                    // Set active for components under mouse
-                    std::function<void(engine::ui::UIComponent*)> setActive = [&](engine::ui::UIComponent* comp) {
-                        if (comp->isInteractable() && comp->containsPoint(mousePos)) {
-                            comp->setState(engine::ui::UIState::Active);
-                            
-                            // Test button click
-                            if (auto* button = dynamic_cast<engine::ui::UIButton*>(comp)) {
-                                std::cout << "Button clicked: " << button->getText() << std::endl;
-                                if (button->isToggleMode()) {
-                                    button->setToggled(!button->isToggled());
-                                }
-                            }
-                            
-                            // Test checkbox toggle
-                            if (auto* checkbox = dynamic_cast<engine::ui::UICheckbox*>(comp)) {
-                                checkbox->setChecked(!checkbox->isChecked());
-                                std::cout << "Checkbox toggled: " << (checkbox->isChecked() ? "checked" : "unchecked") << std::endl;
-                            }
-                            
-                            // Test slider drag
-                            if (auto* slider = dynamic_cast<engine::ui::UISlider*>(comp)) {
-                                glm::vec2 pos = comp->getWorldPosition();
-                                glm::vec2 size = comp->getWorldSize();
-                                float relativeX = (mouseX - pos.x) / size.x;
-                                if (relativeX < 0.0f) relativeX = 0.0f;
-                                if (relativeX > 1.0f) relativeX = 1.0f;
-                                slider->setValue(relativeX);
-                                std::cout << "Slider value: " << slider->getValue() << std::endl;
-                            }
-                        }
-                        for (auto* child : comp->getChildren()) {
-                            setActive(child);
-                        }
-                    };
-                    setActive(root);
-                }
+                // Convert SDL event to InputEvent
+                engine::ui::InputEvent inputEvent = engine::ui::InputEvent::mouseButton(
+                    static_cast<float>(event.button.x),
+                    static_cast<float>(event.button.y),
+                    event.button.button,
+                    true
+                );
+                uiManager.dispatchInput(inputEvent);
             } else if (event.type == SDL_MOUSEBUTTONUP) {
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    int mouseX = event.button.x;
-                    int mouseY = event.button.y;
-                    glm::vec2 mousePos(mouseX, mouseY);
-                    
-                    // Reset to hover for components under mouse
-                    std::function<void(engine::ui::UIComponent*)> resetToHover = [&](engine::ui::UIComponent* comp) {
-                        if (comp->isInteractable()) {
-                            if (comp->containsPoint(mousePos)) {
-                                comp->setState(engine::ui::UIState::Hover);
-                            } else {
-                                comp->setState(engine::ui::UIState::Normal);
-                            }
-                        }
-                        for (auto* child : comp->getChildren()) {
-                            resetToHover(child);
-                        }
-                    };
-                    resetToHover(root);
-                }
+                // Convert SDL event to InputEvent
+                engine::ui::InputEvent inputEvent = engine::ui::InputEvent::mouseButton(
+                    static_cast<float>(event.button.x),
+                    static_cast<float>(event.button.y),
+                    event.button.button,
+                    false
+                );
+                uiManager.dispatchInput(inputEvent);
             }
         }
+        
+        // Update UI
+        uiManager.update(0.016);  // ~60 FPS
         
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 20, 20, 25, 255);
         SDL_RenderClear(renderer);
         
-        // Render UI
-        uiRenderer.render(root);
+        // Render UI directly using UIRenderer
+        uiRenderer.render(components[0].get());
         
         // Present
         SDL_RenderPresent(renderer);

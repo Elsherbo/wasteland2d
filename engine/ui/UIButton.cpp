@@ -28,25 +28,30 @@ void UIButton::render(Renderer& renderer) {
     // 6. Apply shadow if enabled
 }
 
-bool UIButton::handleInput(const InputEvent& event) {
+void UIButton::guiInput(const InputEvent& event) {
     if (!isInteractable() || getState() == UIState::Disabled) {
-        return false;
+        return;
     }
     
-    // Check if mouse is over button
-    bool isOver = containsPoint(event.mousePosition);
+    if (!event.isMouseButton()) return;
     
-    if (event.mouseDown && isOver) {
+    const auto* mouseData = event.getMouseData();
+    if (!mouseData) return;
+    
+    bool isOver = containsPoint(mouseData->position);
+    
+    if (mouseData->pressed && isOver) {
         if (toggleMode_) {
             setToggled(!toggled_);
         } else {
             setState(UIState::Active);
         }
         wasPressed_ = true;
-        return true;
+        acceptEvent();
+        return;
     }
     
-    if (event.mouseUp && wasPressed_) {
+    if (!mouseData->pressed && wasPressed_) {
         wasPressed_ = false;
         
         if (isOver) {
@@ -58,7 +63,8 @@ bool UIButton::handleInput(const InputEvent& event) {
             if (onClick) {
                 onClick();
             }
-            return true;
+            acceptEvent();
+            return;
         } else {
             if (!toggleMode_) {
                 setState(UIState::Normal);
@@ -74,8 +80,6 @@ bool UIButton::handleInput(const InputEvent& event) {
             setState(UIState::Normal);
         }
     }
-    
-    return false;
 }
 
 void UIButton::onStateChanged(UIState oldState, UIState newState) {

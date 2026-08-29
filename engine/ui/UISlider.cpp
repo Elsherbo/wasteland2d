@@ -45,54 +45,62 @@ void UISlider::render(Renderer& renderer) {
     // 4. Apply style states
 }
 
-bool UISlider::handleInput(const InputEvent& event) {
+void UISlider::guiInput(const InputEvent& event) {
     if (!isInteractable() || getState() == UIState::Disabled) {
-        return false;
+        return;
     }
+    
+    if (!event.isMouseButton() && !event.isMouseMotion()) return;
+    
+    const auto* mouseData = event.getMouseData();
+    if (!mouseData) return;
     
     glm::vec2 thumbPos = getThumbPosition();
     glm::vec2 worldSize = getWorldSize();
     
     // Check if mouse is over thumb or track
-    bool isOverThumb = event.mousePosition.x >= thumbPos.x && 
-                       event.mousePosition.x <= thumbPos.x + thumbSize_ &&
-                       event.mousePosition.y >= thumbPos.y && 
-                       event.mousePosition.y <= thumbPos.y + thumbSize_;
+    bool isOverThumb = mouseData->position.x >= thumbPos.x && 
+                       mouseData->position.x <= thumbPos.x + thumbSize_ &&
+                       mouseData->position.y >= thumbPos.y && 
+                       mouseData->position.y <= thumbPos.y + thumbSize_;
     
-    bool isOverTrack = containsPoint(event.mousePosition);
+    bool isOverTrack = containsPoint(mouseData->position);
     
-    if (event.mouseDown && (isOverThumb || isOverTrack)) {
+    if (event.isMouseButton() && mouseData->pressed && (isOverThumb || isOverTrack)) {
         isDragging_ = true;
         setState(UIState::Active);
         
         // Update value based on mouse position
         glm::vec2 worldPos = getWorldPosition();
-        float percent = (event.mousePosition.x - worldPos.x) / (worldSize.x - thumbSize_);
+        float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
         if (percent < 0.0f) percent = 0.0f;
         if (percent > 1.0f) percent = 1.0f;
         setValue(minValue_ + percent * (maxValue_ - minValue_));
         
-        return true;
+        acceptEvent();
+        return;
     }
     
-    if (event.mouseUp) {
+    if (event.isMouseButton() && !mouseData->pressed) {
         isDragging_ = false;
         if (isOverThumb || isOverTrack) {
             setState(UIState::Hover);
         } else {
             setState(UIState::Normal);
         }
-        return true;
+        acceptEvent();
+        return;
     }
     
-    if (isDragging_) {
+    if (event.isMouseMotion() && isDragging_) {
         // Update value while dragging
         glm::vec2 worldPos = getWorldPosition();
-        float percent = (event.mousePosition.x - worldPos.x) / (worldSize.x - thumbSize_);
+        float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
         if (percent < 0.0f) percent = 0.0f;
         if (percent > 1.0f) percent = 1.0f;
         setValue(minValue_ + percent * (maxValue_ - minValue_));
-        return true;
+        acceptEvent();
+        return;
     }
     
     // Update hover state
@@ -101,8 +109,6 @@ bool UISlider::handleInput(const InputEvent& event) {
     } else {
         setState(UIState::Normal);
     }
-    
-    return false;
 }
 
 } // namespace engine::ui

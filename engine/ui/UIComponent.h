@@ -8,14 +8,22 @@
 #include <functional>
 #include <unordered_map>
 #include "UIStyle.h"
+#include "InputEvent.h"
 
 namespace engine::ui {
 
 // Forward declarations
 class Renderer;
 
-// Dummy InputEvent for now (will be expanded later)
-struct InputEvent {
+// Mouse filter (Godot-style)
+enum class MouseFilter {
+    Stop,      // Don't receive mouse events
+    Pass,      // Receive but pass to children
+    Ignore     // Receive and stop propagation
+};
+
+// Legacy input event (for backward compatibility with existing code)
+struct InputEventLegacy {
     glm::vec2 mousePosition;
     bool mouseDown = false;
     bool mouseUp = false;
@@ -71,8 +79,20 @@ public:
     // Lifecycle
     virtual void update(double dt);
     virtual void render(Renderer& renderer);
-    virtual bool handleInput(const InputEvent& event);
+    virtual bool handleInput(const InputEventLegacy& event);  // Legacy, for backward compatibility
     virtual void layout();  // Calculate children positions
+    
+    // GUI Input (Godot-style _gui_input)
+    virtual void guiInput(const InputEvent& event);
+    
+    // Event propagation control
+    void acceptEvent() { eventAccepted_ = true; }
+    bool isEventAccepted() const { return eventAccepted_; }
+    void resetEventAccepted() { eventAccepted_ = false; }
+    
+    // Mouse filter (Godot-style)
+    MouseFilter getMouseFilter() const { return mouseFilter_; }
+    void setMouseFilter(MouseFilter filter) { mouseFilter_ = filter; }
     
     // Dirty flag for optimization
     bool isDirty() const { return dirty_; }
@@ -115,6 +135,10 @@ private:
     
     // Dirty flag
     bool dirty_ = true;
+    
+    // Event handling
+    bool eventAccepted_ = false;
+    MouseFilter mouseFilter_ = MouseFilter::Pass;
 };
 
 } // namespace engine::ui

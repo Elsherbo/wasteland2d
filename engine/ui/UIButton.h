@@ -41,7 +41,7 @@ public:
     
     // Lifecycle
     void render(Renderer& renderer) override;
-    bool handleInput(const InputEvent& event) override;
+    void guiInput(const InputEvent& event) override;
     
 protected:
     void onStateChanged(UIState oldState, UIState newState) override;

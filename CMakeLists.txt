@@ -101,14 +101,17 @@ target_include_directories(engine PUBLIC
 target_link_libraries(engine PUBLIC SDL2::SDL2 SDL2_image::SDL2_image SDL2_ttf::SDL2_ttf tinyxml2::tinyxml2 glm::glm box2d::box2d nlohmann_json::nlohmann_json)
 
 # --- game (this specific game, executable) -----------------------------
-file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/game/*.cpp"
+set(GAME_SOURCES
+    "game/main.cpp"
+    "game/Game.cpp"
+    "game/GameScene.cpp"
+    "game/data/ItemDatabase.cpp"
 )
 add_executable(wasteland2d ${GAME_SOURCES})
 target_include_directories(wasteland2d PRIVATE
     "${CMAKE_SOURCE_DIR}/game"
 )
-target_link_libraries(wasteland2d PRIVATE engine nlohmann_json::nlohmann_json)
+target_link_libraries(wasteland2d PRIVATE engine nlohmann_json::nlohmann_json SDL2::SDL2main)
 
 # Copy assets next to the built binary so relative paths ("assets/...")
 # resolve the same in-editor and when double-clicking the exe.

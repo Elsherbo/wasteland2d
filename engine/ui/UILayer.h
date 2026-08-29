@@ -30,7 +30,7 @@ public:
     // Lifecycle
     void update(double dt);
     void render(Renderer& renderer);
-    bool handleInput(const InputEvent& event);
+    bool handleInput(const InputEventLegacy& event);
 
 private:
     std::string name_;
@@ -58,7 +58,7 @@ public:
     void updateAll(double dt);
     
     // Input handling (top-most visible layer first)
-    bool handleInput(const InputEvent& event);
+    bool handleInput(const InputEventLegacy& event);
     
     // Get all layers
     const std::vector<UILayer*>& getLayers() const { return layers_; }
