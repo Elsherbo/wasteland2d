@@ -1,6 +1,8 @@
 #include "UIComponent.h"
 #include "UIStyle.h"
+#include "InputEvent.h"
 #include "core/Logger.h"
+#include <algorithm>
 
 namespace engine::ui {
 
@@ -57,9 +59,25 @@ void UIComponent::layout() {
     }
 }
 
+glm::vec2 UIComponent::calculateMinSize() const {
+    // Default implementation: return custom minimum size if set, otherwise current size
+    if (customMinimumSize_.x > 0.0f || customMinimumSize_.y > 0.0f) {
+        return customMinimumSize_;
+    }
+    return minSize_;
+}
+
 void UIComponent::guiInput(const InputEvent& event) {
-    // Base implementation - can be overridden in subclasses
-    (void)event;
+    // Forward to children (reverse order for top-most first)
+    for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
+        if ((*it)->isVisible() && (*it)->isInteractable()) {
+            (*it)->guiInput(event);
+            // If child accepted the event, stop propagating
+            if ((*it)->isEventAccepted()) {
+                return;
+            }
+        }
+    }
 }
 
 void UIComponent::onStateChanged(UIState oldState, UIState newState) {
@@ -101,6 +119,8 @@ void UIComponent::addChild(std::unique_ptr<UIComponent> child) {
     children_.push_back(child.get());
     childrenOwned_.push_back(std::move(child));
     setDirty();
+    setLayoutDirty();  // Invalidate layout when children change
+    invalidateParentLayout();  // Propagate up to parent containers
 }
 
 void UIComponent::removeChild(UIComponent* child) {
@@ -117,6 +137,33 @@ void UIComponent::removeChild(UIComponent* child) {
         }
         
         setDirty();
+    }
+}
+
+void UIComponent::requestPointerCapture() {
+    // This would be implemented through UIManager in a real system
+    // For now, it's a placeholder
+    // TODO: Wire this to UIManager::setCapturedComponent
+}
+
+void UIComponent::releasePointerCapture() {
+    // This would be implemented through UIManager in a real system
+    // For now, it's a placeholder
+    // TODO: Wire this to UIManager::clearCapture
+}
+
+void UIComponent::invalidateParentLayout() {
+    // Propagate layout invalidation up the parent chain
+    if (parent_) {
+        parent_->setLayoutDirty();
+        parent_->invalidateParentLayout();  // Recurse up
+    }
+}
+
+void UIComponent::renderUI(UIRenderer& uiRenderer) {
+    // Default implementation: render children
+    for (auto* child : getChildren()) {
+        child->renderUI(uiRenderer);
     }
 }
 

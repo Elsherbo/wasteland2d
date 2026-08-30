@@ -92,18 +92,26 @@ public:
     // Set current theme
     void setTheme(const std::string& name);
     
-    // Get style for a component (creates default if not found)
+    // Get style for a component in the current theme (creates default if not found)
     UIStyle* getStyle(const std::string& componentName);
     const UIStyle* getStyle(const std::string& componentName) const;
     
-    // Register a style programmatically
-    void registerStyle(const std::string& componentName, const UIStyle& style);
+    // Get style for a component in a specific theme
+    UIStyle* getStyle(const std::string& themeName, const std::string& componentName);
+    const UIStyle* getStyle(const std::string& themeName, const std::string& componentName) const;
+    
+    // Register a style programmatically for a specific theme
+    void registerStyle(const std::string& themeName, const std::string& componentName, const UIStyle& style);
     
     // Get current theme name
     const std::string& getCurrentTheme() const { return currentTheme_; }
+    
+    // Check if a theme exists
+    bool hasTheme(const std::string& name) const;
 
 private:
-    std::unordered_map<std::string, UIStyle> styles_;
+    // Nested map: theme_name -> component_name -> style
+    std::unordered_map<std::string, std::unordered_map<std::string, UIStyle>> themeStyles_;
     std::string currentTheme_ = "Default";
 };
 

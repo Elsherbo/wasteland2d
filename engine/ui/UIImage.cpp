@@ -1,9 +1,14 @@
 #include "UIImage.h"
+#include "UIRenderer.h"
 
 namespace engine::ui {
 
 UIImage::UIImage() {
     setInteractable(false);  // Images are not interactive by default
+}
+
+void UIImage::renderUI(UIRenderer& uiRenderer) {
+    uiRenderer.renderImageHelper(this);
 }
 
 void UIImage::render(Renderer& renderer) {

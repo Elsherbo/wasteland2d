@@ -38,7 +38,9 @@ public:
     
     // Lifecycle
     void render(Renderer& renderer) override;
+    void renderUI(UIRenderer& uiRenderer) override;
     void guiInput(const InputEvent& event) override;
+    glm::vec2 calculateMinSize() const override;
 
 private:
     void clampValue();
@@ -50,9 +52,9 @@ private:
     
     std::string trackImage_;
     std::string thumbImage_;
-    float thumbSize_ = 16.0f;
+    float thumbSize_ = 6.0f;
     
-    bool isDragging_ = false;
+    bool wasPressed_ = false;
 };
 
 } // namespace engine::ui

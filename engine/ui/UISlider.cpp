@@ -1,4 +1,7 @@
 #include "UISlider.h"
+#include "InputEvent.h"
+#include "UIRenderer.h"
+#include <algorithm>
 
 namespace engine::ui {
 
@@ -33,6 +36,10 @@ glm::vec2 UISlider::getThumbPosition() const {
     return glm::vec2(thumbX, thumbY);
 }
 
+void UISlider::renderUI(UIRenderer& uiRenderer) {
+    uiRenderer.renderSliderHelper(this);
+}
+
 void UISlider::render(Renderer& renderer) {
     // TODO: Implement rendering in Phase 6 with actual Renderer
     // For now, this is a placeholder
@@ -50,8 +57,6 @@ void UISlider::guiInput(const InputEvent& event) {
         return;
     }
     
-    if (!event.isMouseButton() && !event.isMouseMotion()) return;
-    
     const auto* mouseData = event.getMouseData();
     if (!mouseData) return;
     
@@ -66,8 +71,33 @@ void UISlider::guiInput(const InputEvent& event) {
     
     bool isOverTrack = containsPoint(mouseData->position);
     
-    if (event.isMouseButton() && mouseData->pressed && (isOverThumb || isOverTrack)) {
-        isDragging_ = true;
+    // Handle mouse motion for hover state and drag
+    if (event.isMouseMotion()) {
+        if (wasPressed_) {
+            // Update value while dragging
+            glm::vec2 worldPos = getWorldPosition();
+            float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
+            if (percent < 0.0f) percent = 0.0f;
+            if (percent > 1.0f) percent = 1.0f;
+            setValue(minValue_ + percent * (maxValue_ - minValue_));
+            acceptEvent();
+            return;
+        }
+        
+        // Update hover state (only if not dragging)
+        if (isOverThumb || isOverTrack) {
+            setState(UIState::Hover);
+        } else {
+            setState(UIState::Normal);
+        }
+        return;
+    }
+    
+    // Handle mouse button events
+    if (!event.isMouseButton()) return;
+    
+    if (mouseData->pressed && (isOverThumb || isOverTrack)) {
+        wasPressed_ = true;
         setState(UIState::Active);
         
         // Update value based on mouse position
@@ -81,8 +111,8 @@ void UISlider::guiInput(const InputEvent& event) {
         return;
     }
     
-    if (event.isMouseButton() && !mouseData->pressed) {
-        isDragging_ = false;
+    if (!mouseData->pressed && wasPressed_) {
+        wasPressed_ = false;
         if (isOverThumb || isOverTrack) {
             setState(UIState::Hover);
         } else {
@@ -91,24 +121,19 @@ void UISlider::guiInput(const InputEvent& event) {
         acceptEvent();
         return;
     }
+}
+
+glm::vec2 UISlider::calculateMinSize() const {
+    // Slider needs minimum size for usability
+    float minWidth = 50.0f;
+    float minHeight = 20.0f;
     
-    if (event.isMouseMotion() && isDragging_) {
-        // Update value while dragging
-        glm::vec2 worldPos = getWorldPosition();
-        float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
-        if (percent < 0.0f) percent = 0.0f;
-        if (percent > 1.0f) percent = 1.0f;
-        setValue(minValue_ + percent * (maxValue_ - minValue_));
-        acceptEvent();
-        return;
-    }
+    // Respect custom minimum size if set
+    glm::vec2 calculatedMin(minWidth, minHeight);
+    if (customMinimumSize_.x > 0.0f) calculatedMin.x = customMinimumSize_.x;
+    if (customMinimumSize_.y > 0.0f) calculatedMin.y = customMinimumSize_.y;
     
-    // Update hover state
-    if (isOverThumb || isOverTrack) {
-        setState(UIState::Hover);
-    } else {
-        setState(UIState::Normal);
-    }
+    return calculatedMin;
 }
 
 } // namespace engine::ui

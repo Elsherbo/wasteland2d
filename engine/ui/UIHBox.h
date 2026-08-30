@@ -14,16 +14,12 @@ public:
     float getSpacing() const { return spacing_; }
     void setSpacing(float spacing) { spacing_ = spacing; setLayoutDirty(); }
     
-    // Expand children to fill height
-    bool shouldExpandChildren() const { return expandChildren_; }
-    void setExpandChildren(bool expand) { expandChildren_ = expand; setLayoutDirty(); }
-    
     // Layout
     void layout() override;
+    glm::vec2 calculateMinSize() const override;
 
 private:
     float spacing_ = 0.0f;
-    bool expandChildren_ = false;
 };
 
 } // namespace engine::ui

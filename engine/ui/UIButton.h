@@ -41,7 +41,9 @@ public:
     
     // Lifecycle
     void render(Renderer& renderer) override;
+    void renderUI(UIRenderer& uiRenderer) override;
     void guiInput(const InputEvent& event) override;
+    glm::vec2 calculateMinSize() const override;
     
 protected:
     void onStateChanged(UIState oldState, UIState newState) override;

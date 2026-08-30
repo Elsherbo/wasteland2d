@@ -60,6 +60,11 @@ public:
     void setFocusedComponent(UIComponent* component);
     void clearFocus();
     
+    // Pointer capture management (for drag operations)
+    UIComponent* getCapturedComponent() const { return capturedComponent_; }
+    void setCapturedComponent(UIComponent* component);
+    void clearCapture();
+    
     // Hover management
     UIComponent* getHoveredComponent() const { return hoveredComponent_; }
 
@@ -70,6 +75,7 @@ private:
     
     UIComponent* focusedComponent_ = nullptr;
     UIComponent* hoveredComponent_ = nullptr;
+    UIComponent* capturedComponent_ = nullptr;  // For pointer capture during drag operations
 };
 
 } // namespace engine::ui

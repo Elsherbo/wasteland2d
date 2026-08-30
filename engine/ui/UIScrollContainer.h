@@ -31,14 +31,27 @@ public:
     
     // Update (for scroll input)
     void update(double dt) override;
+    
+    // GUI Input (for mouse wheel scrolling and thumb dragging)
+    void guiInput(const InputEvent& event) override;
+    
+    // UI rendering (for scrollbar)
+    void renderUI(UIRenderer& uiRenderer) override;
 
 private:
     void clampScroll();
+    bool isPointInScrollbarThumb(glm::vec2 point) const;
+    bool isPointInScrollbarTrack(glm::vec2 point) const;
     
     glm::vec2 contentSize_ = glm::vec2(100.0f, 100.0f);
     glm::vec2 scrollPosition_ = glm::vec2(0.0f);
     bool horizontalScroll_ = false;
     bool verticalScroll_ = true;
+    
+    // Thumb dragging state
+    bool draggingThumb_ = false;
+    glm::vec2 dragStartPos_ = glm::vec2(0.0f);
+    glm::vec2 dragStartScroll_ = glm::vec2(0.0f);
 };
 
 } // namespace engine::ui

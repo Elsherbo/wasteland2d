@@ -1,4 +1,7 @@
 #include "UIButton.h"
+#include "InputEvent.h"
+#include "UIRenderer.h"
+#include <glm/vec2.hpp>
 
 namespace engine::ui {
 
@@ -12,6 +15,10 @@ void UIButton::setToggled(bool toggled) {
         setState(toggled_ ? UIState::Active : UIState::Normal);
         setDirty();
     }
+}
+
+void UIButton::renderUI(UIRenderer& uiRenderer) {
+    uiRenderer.renderButtonHelper(this);
 }
 
 void UIButton::render(Renderer& renderer) {
@@ -33,12 +40,37 @@ void UIButton::guiInput(const InputEvent& event) {
         return;
     }
     
-    if (!event.isMouseButton()) return;
-    
     const auto* mouseData = event.getMouseData();
     if (!mouseData) return;
     
     bool isOver = containsPoint(mouseData->position);
+    
+    // Handle mouse motion for hover state
+    if (event.isMouseMotion()) {
+        if (wasPressed_) {
+            // While pressed, stay in Active if over, go to Normal if not over
+            if (isOver) {
+                setState(UIState::Active);
+            } else {
+                if (!toggleMode_ || !toggled_) {
+                    setState(UIState::Normal);
+                }
+            }
+        } else {
+            // Not pressed, handle normal hover
+            if (isOver && getState() != UIState::Active) {
+                setState(UIState::Hover);
+            } else if (!isOver && getState() != UIState::Active) {
+                if (!toggleMode_ || !toggled_) {
+                    setState(UIState::Normal);
+                }
+            }
+        }
+        return;
+    }
+    
+    // Handle mouse button events
+    if (!event.isMouseButton()) return;
     
     if (mouseData->pressed && isOver) {
         if (toggleMode_) {
@@ -59,7 +91,7 @@ void UIButton::guiInput(const InputEvent& event) {
                 setState(UIState::Hover);
             }
             
-            // Trigger click callback
+            // Trigger click callback on mouse up
             if (onClick) {
                 onClick();
             }
@@ -71,15 +103,6 @@ void UIButton::guiInput(const InputEvent& event) {
             }
         }
     }
-    
-    // Update hover state
-    if (isOver && !wasPressed_ && getState() != UIState::Active) {
-        setState(UIState::Hover);
-    } else if (!isOver && !wasPressed_ && getState() != UIState::Active) {
-        if (!toggleMode_ || !toggled_) {
-            setState(UIState::Normal);
-        }
-    }
 }
 
 void UIButton::onStateChanged(UIState oldState, UIState newState) {
@@ -88,6 +111,23 @@ void UIButton::onStateChanged(UIState oldState, UIState newState) {
     (void)newState;
     
     // TODO: Play sounds, animations, etc. in Phase 6
+}
+
+glm::vec2 UIButton::calculateMinSize() const {
+    // Calculate minimum size based on text length (similar to label)
+    float estimatedWidth = static_cast<float>(text_.length() * 10) + 20.0f;  // +20px padding
+    float estimatedHeight = 30.0f;  // Default button height
+    
+    // Respect custom minimum size if set
+    glm::vec2 calculatedMin(estimatedWidth, estimatedHeight);
+    if (customMinimumSize_.x > 0.0f) calculatedMin.x = customMinimumSize_.x;
+    if (customMinimumSize_.y > 0.0f) calculatedMin.y = customMinimumSize_.y;
+    
+    // Ensure minimum size
+    if (calculatedMin.x < 80.0f) calculatedMin.x = 80.0f;
+    if (calculatedMin.y < 30.0f) calculatedMin.y = 30.0f;
+    
+    return calculatedMin;
 }
 
 } // namespace engine::ui

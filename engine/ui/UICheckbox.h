@@ -32,7 +32,9 @@ public:
     
     // Lifecycle
     void render(Renderer& renderer) override;
+    void renderUI(UIRenderer& uiRenderer) override;
     void guiInput(const InputEvent& event) override;
+    glm::vec2 calculateMinSize() const override;
 
 private:
     bool checked_ = false;
@@ -40,6 +42,8 @@ private:
     
     std::string uncheckedImage_;
     std::string checkedImage_;
+    
+    bool wasPressed_ = false;
 };
 
 } // namespace engine::ui

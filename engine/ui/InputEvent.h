@@ -11,6 +11,7 @@ struct InputEvent {
         None,
         MouseMotion,
         MouseButton,
+        MouseWheel,
         Key,
         FocusLost,
         FocusGained
@@ -27,6 +28,12 @@ struct InputEvent {
         bool doubleClick = false;
     };
     
+    // Mouse wheel data
+    struct MouseWheelData {
+        glm::vec2 position;
+        float delta = 0.0f;  // Scroll amount (positive = scroll down/right)
+    };
+    
     // Keyboard data
     struct KeyData {
         int scancode = 0;
@@ -35,7 +42,7 @@ struct InputEvent {
         bool echo = false;    // Key repeat
     };
     
-    std::variant<std::monostate, MouseData, KeyData> data;
+    std::variant<std::monostate, MouseData, MouseWheelData, KeyData> data;
     
     // Convenience constructors
     static InputEvent mouseMotion(float x, float y, float relX, float relY) {
@@ -71,13 +78,25 @@ struct InputEvent {
         return event;
     }
     
+    static InputEvent mouseWheel(float x, float y, float delta) {
+        InputEvent event;
+        event.type = Type::MouseWheel;
+        event.data = MouseWheelData{glm::vec2(x, y), delta};
+        return event;
+    }
+    
     // Accessors
     bool isMouseMotion() const { return type == Type::MouseMotion; }
     bool isMouseButton() const { return type == Type::MouseButton; }
+    bool isMouseWheel() const { return type == Type::MouseWheel; }
     bool isKey() const { return type == Type::Key; }
     
     const MouseData* getMouseData() const {
         return std::get_if<MouseData>(&data);
+    }
+    
+    const MouseWheelData* getMouseWheelData() const {
+        return std::get_if<MouseWheelData>(&data);
     }
     
     const KeyData* getKeyData() const {

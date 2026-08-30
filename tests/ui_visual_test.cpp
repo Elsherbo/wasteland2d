@@ -88,11 +88,13 @@ int main(int argc, char* argv[]) {
     vbox->setSize(glm::vec2(300, 400));
     vbox->setSpacing(10);
     vbox->setPadding(glm::vec2(10));
+    vbox->setInteractable(true);
     
     // Add label
     auto label = std::make_unique<engine::ui::UILabel>();
     label->setText("UI System Test");
     label->setSize(glm::vec2(280, 30));
+    label->setInteractable(true);
     vbox->addChild(std::move(label));
     
     // Add button
@@ -126,6 +128,7 @@ int main(int argc, char* argv[]) {
     auto image = std::make_unique<engine::ui::UIImage>();
     image->setSize(glm::vec2(280, 50));
     image->setTintColor(glm::vec4(0.2f, 0.5f, 0.8f, 1.0f));
+    image->setInteractable(true);
     vbox->addChild(std::move(image));
     
     // Layout the container

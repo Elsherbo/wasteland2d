@@ -1,4 +1,6 @@
 #include "UIManager.h"
+#include "InputEvent.h"
+#include <iostream>
 
 namespace engine::ui {
 
@@ -80,7 +82,30 @@ void UIManager::dispatchInput(const InputEvent& event) {
         }
     }
     
-    // 2. Dispatch to components in z-order (top-most first)
+    // 2. If a component has pointer capture, send events directly to it
+    if (capturedComponent_ && (event.isMouseMotion() || event.isMouseButton() || event.isMouseWheel())) {
+        capturedComponent_->guiInput(event);
+        if (capturedComponent_->isEventAccepted()) {
+            // If mouse button is released, clear capture
+            if (event.isMouseButton()) {
+                const auto* mouseData = event.getMouseData();
+                if (mouseData && !mouseData->pressed) {
+                    clearCapture();
+                }
+            }
+            return;
+        }
+        // If mouse button is released, clear capture even if not accepted
+        if (event.isMouseButton()) {
+            const auto* mouseData = event.getMouseData();
+            if (mouseData && !mouseData->pressed) {
+                clearCapture();
+            }
+        }
+        return;
+    }
+    
+    // 3. Dispatch to components in z-order (top-most first)
     for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
         if (!(*it)->isVisible()) continue;
         
@@ -91,10 +116,12 @@ void UIManager::dispatchInput(const InputEvent& event) {
             
             // Check mouse filter
             if (event.isMouseMotion() || event.isMouseButton()) {
-                if (comp->getMouseFilter() == MouseFilter::Stop) continue;
+                // Stop: this control receives the event and consumes it, nothing below gets it
+                // Ignore: this control is invisible to the mouse, pass straight through
+                if (comp->getMouseFilter() == MouseFilter::Ignore) continue;
             }
             
-            // Check if event is within component bounds
+            // Check if event is within component bounds (skip if pointer is captured)
             if (event.isMouseMotion() || event.isMouseButton()) {
                 const auto* mouseData = event.getMouseData();
                 if (mouseData && !comp->containsPoint(mouseData->position)) continue;
@@ -105,12 +132,19 @@ void UIManager::dispatchInput(const InputEvent& event) {
             
             // If event was accepted, stop propagation
             if (comp->isEventAccepted()) {
+                // Capture pointer on mouse button press for drag operations
+                if (event.isMouseButton()) {
+                    const auto* mouseData = event.getMouseData();
+                    if (mouseData && mouseData->pressed) {
+                        setCapturedComponent(comp);
+                    }
+                }
                 return;
             }
             
-            // If mouse filter is Ignore, stop propagation even if not accepted
+            // If mouse filter is Stop, stop propagation even if not accepted
             if (event.isMouseMotion() || event.isMouseButton()) {
-                if (comp->getMouseFilter() == MouseFilter::Ignore) return;
+                if (comp->getMouseFilter() == MouseFilter::Stop) return;
             }
         }
     }
@@ -148,6 +182,14 @@ void UIManager::clearFocus() {
         focusedComponent_->setState(UIState::Normal);
         focusedComponent_ = nullptr;
     }
+}
+
+void UIManager::setCapturedComponent(UIComponent* component) {
+    capturedComponent_ = component;
+}
+
+void UIManager::clearCapture() {
+    capturedComponent_ = nullptr;
 }
 
 } // namespace engine::ui

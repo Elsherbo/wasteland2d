@@ -37,6 +37,7 @@ public:
     
     // Lifecycle
     void render(Renderer& renderer) override;
+    void renderUI(UIRenderer& uiRenderer) override;
 
 private:
     std::string texturePath_;

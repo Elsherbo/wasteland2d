@@ -13,6 +13,10 @@ public:
     
     // Layout management
     virtual void layout() override;
+    virtual glm::vec2 calculateMinSize() const override;
+    
+    // UI rendering
+    virtual void renderUI(UIRenderer& uiRenderer) override;
     
     // Content area (excluding padding)
     glm::vec2 getContentArea() const;

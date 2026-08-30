@@ -66,25 +66,51 @@ void UIThemeManager::setTheme(const std::string& name) {
 }
 
 UIStyle* UIThemeManager::getStyle(const std::string& componentName) {
-    auto it = styles_.find(componentName);
-    if (it == styles_.end()) {
+    return getStyle(currentTheme_, componentName);
+}
+
+const UIStyle* UIThemeManager::getStyle(const std::string& componentName) const {
+    return getStyle(currentTheme_, componentName);
+}
+
+UIStyle* UIThemeManager::getStyle(const std::string& themeName, const std::string& componentName) {
+    auto themeIt = themeStyles_.find(themeName);
+    if (themeIt == themeStyles_.end()) {
+        // Create theme if it doesn't exist
+        themeStyles_[themeName] = std::unordered_map<std::string, UIStyle>();
+        themeIt = themeStyles_.find(themeName);
+    }
+    
+    auto& styles = themeIt->second;
+    auto it = styles.find(componentName);
+    if (it == styles.end()) {
         // Create default style
-        styles_[componentName] = UIStyle();
-        return &styles_[componentName];
+        styles[componentName] = UIStyle();
+        return &styles[componentName];
     }
     return &it->second;
 }
 
-const UIStyle* UIThemeManager::getStyle(const std::string& componentName) const {
-    auto it = styles_.find(componentName);
-    if (it == styles_.end()) {
+const UIStyle* UIThemeManager::getStyle(const std::string& themeName, const std::string& componentName) const {
+    auto themeIt = themeStyles_.find(themeName);
+    if (themeIt == themeStyles_.end()) {
+        return nullptr;
+    }
+    
+    const auto& styles = themeIt->second;
+    auto it = styles.find(componentName);
+    if (it == styles.end()) {
         return nullptr;
     }
     return &it->second;
 }
 
-void UIThemeManager::registerStyle(const std::string& componentName, const UIStyle& style) {
-    styles_[componentName] = style;
+void UIThemeManager::registerStyle(const std::string& themeName, const std::string& componentName, const UIStyle& style) {
+    themeStyles_[themeName][componentName] = style;
+}
+
+bool UIThemeManager::hasTheme(const std::string& name) const {
+    return themeStyles_.find(name) != themeStyles_.end();
 }
 
 } // namespace engine::ui
