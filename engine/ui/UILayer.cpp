@@ -28,6 +28,16 @@ void UILayer::update(double dt) {
     }
 }
 
+void UILayer::layout() {
+    if (!visible_) return;
+    
+    for (auto* component : components_) {
+        if (component->isVisible()) {
+            component->layout();
+        }
+    }
+}
+
 void UILayer::render(Renderer& renderer) {
     if (!visible_) return;
     
@@ -99,6 +109,14 @@ void UILayerManager::updateAll(double dt) {
     for (auto* layer : layers_) {
         if (layer->isVisible()) {
             layer->update(dt);
+        }
+    }
+}
+
+void UILayerManager::layoutAll() {
+    for (auto* layer : layers_) {
+        if (layer->isVisible()) {
+            layer->layout();
         }
     }
 }

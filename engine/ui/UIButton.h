@@ -39,6 +39,14 @@ public:
     bool isToggled() const { return toggled_; }
     void setToggled(bool toggled);
     
+    // Visual variant: which registered theme style to render with
+    // ("Button" = default, "Button.Primary" = the one emphasized action
+    // on a screen, "Button.Ghost" = border-only / secondary action).
+    // Lets a screen with several buttons establish a clear visual
+    // hierarchy instead of every button looking identical.
+    const std::string& getStyleName() const { return styleName_; }
+    void setStyleName(const std::string& styleName) { styleName_ = styleName; }
+    
     // Lifecycle
     void render(Renderer& renderer) override;
     void renderUI(UIRenderer& uiRenderer) override;
@@ -50,6 +58,7 @@ protected:
 
 private:
     std::string text_;
+    std::string styleName_ = "Button";
     
     // Images per state
     std::string normalImage_;

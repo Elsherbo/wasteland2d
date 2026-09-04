@@ -29,6 +29,7 @@ public:
     
     // Lifecycle
     void update(double dt);
+    void layout();
     void render(Renderer& renderer);
     bool handleInput(const InputEventLegacy& event);
 
@@ -56,6 +57,11 @@ public:
     
     // Updates all visible layers
     void updateAll(double dt);
+    
+    // Re-applies layout for any component that's been marked dirty since
+    // the last pass (scrolling, dynamic content, resizing, ...). Must run
+    // every frame, not just once at startup -- see UILayer::layout().
+    void layoutAll();
     
     // Input handling (top-most visible layer first)
     bool handleInput(const InputEventLegacy& event);

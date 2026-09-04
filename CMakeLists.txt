@@ -224,6 +224,10 @@ target_link_libraries(ui_visual_test PRIVATE SDL2::SDL2main SDL2::SDL2 SDL2_ttf:
 add_executable(ui_professional_demo tests/ui_professional_demo.cpp)
 target_link_libraries(ui_professional_demo PRIVATE SDL2::SDL2main SDL2::SDL2 SDL2_ttf::SDL2_ttf glm::glm engine)
 
+# UI hud demo (standalone SDL app)
+add_executable(ui_hud_demo tests/ui_hud_demo.cpp)
+target_link_libraries(ui_hud_demo PRIVATE SDL2::SDL2main SDL2::SDL2 SDL2_ttf::SDL2_ttf glm::glm engine)
+
 # SDL-dependent tests
 add_wasteland_test(font_runtime_test tests/font_runtime_test.cpp FALSE)
 target_link_libraries(font_runtime_test PRIVATE engine SDL2::SDL2 SDL2_ttf::SDL2_ttf)

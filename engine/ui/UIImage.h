@@ -38,6 +38,7 @@ public:
     // Lifecycle
     void render(Renderer& renderer) override;
     void renderUI(UIRenderer& uiRenderer) override;
+    glm::vec2 calculateMinSize() const override;
 
 private:
     std::string texturePath_;

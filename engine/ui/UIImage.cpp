@@ -24,4 +24,18 @@ void UIImage::render(Renderer& renderer) {
     // 5. Render texture
 }
 
+glm::vec2 UIImage::calculateMinSize() const {
+    // UIComponent's default falls back to minSize_, which is never actually
+    // set anywhere in this codebase (dead field) -- every UIImage would
+    // therefore report (0,0) regardless of its real size, invisible to any
+    // parent VBox/HBox doing bottom-up width/height accounting (exactly
+    // what let a 760px-wide separator image contribute nothing to its
+    // panel's auto-computed width). An image's natural footprint is
+    // whatever size it was actually given.
+    if (customMinimumSize_.x > 0.0f || customMinimumSize_.y > 0.0f) {
+        return customMinimumSize_;
+    }
+    return size_;
+}
+
 } // namespace engine::ui

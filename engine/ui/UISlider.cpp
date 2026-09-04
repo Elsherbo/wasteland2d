@@ -28,9 +28,14 @@ glm::vec2 UISlider::getThumbPosition() const {
     glm::vec2 worldPos = getWorldPosition();
     glm::vec2 worldSize = getWorldSize();
     
-    // Calculate thumb position based on value
-    float percent = (value_ - minValue_) / (maxValue_ - minValue_);
-    float thumbX = worldPos.x + percent * (worldSize.x - thumbSize_);
+    // Calculate thumb position based on value. Guard against minValue_ ==
+    // maxValue_ (a single-option slider, or one constructed before its
+    // range is configured) -- that division is otherwise a 0/0 NaN that
+    // propagates straight into the render position.
+    float range = maxValue_ - minValue_;
+    float percent = (range != 0.0f) ? (value_ - minValue_) / range : 0.0f;
+    float trackSpan = std::max(0.0f, worldSize.x - thumbSize_);
+    float thumbX = worldPos.x + percent * trackSpan;
     float thumbY = worldPos.y + (worldSize.y - thumbSize_) * 0.5f;
     
     return glm::vec2(thumbX, thumbY);
@@ -74,9 +79,13 @@ void UISlider::guiInput(const InputEvent& event) {
     // Handle mouse motion for hover state and drag
     if (event.isMouseMotion()) {
         if (wasPressed_) {
-            // Update value while dragging
+            // Update value while dragging. Guard the denominator: if the
+            // track is exactly as wide as the thumb (or narrower, e.g.
+            // during an initial zero-size layout pass), this would
+            // otherwise be a divide-by-zero.
             glm::vec2 worldPos = getWorldPosition();
-            float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
+            float trackSpan = worldSize.x - thumbSize_;
+            float percent = (trackSpan > 0.0f) ? (mouseData->position.x - worldPos.x) / trackSpan : 0.0f;
             if (percent < 0.0f) percent = 0.0f;
             if (percent > 1.0f) percent = 1.0f;
             setValue(minValue_ + percent * (maxValue_ - minValue_));
@@ -100,9 +109,10 @@ void UISlider::guiInput(const InputEvent& event) {
         wasPressed_ = true;
         setState(UIState::Active);
         
-        // Update value based on mouse position
+        // Update value based on mouse position (same guard as the drag path).
         glm::vec2 worldPos = getWorldPosition();
-        float percent = (mouseData->position.x - worldPos.x) / (worldSize.x - thumbSize_);
+        float trackSpan = worldSize.x - thumbSize_;
+        float percent = (trackSpan > 0.0f) ? (mouseData->position.x - worldPos.x) / trackSpan : 0.0f;
         if (percent < 0.0f) percent = 0.0f;
         if (percent > 1.0f) percent = 1.0f;
         setValue(minValue_ + percent * (maxValue_ - minValue_));

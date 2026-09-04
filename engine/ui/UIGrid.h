@@ -30,6 +30,7 @@ public:
     
     // Layout
     void layout() override;
+    glm::vec2 calculateMinSize() const override;
 
 private:
     int columns_ = 1;

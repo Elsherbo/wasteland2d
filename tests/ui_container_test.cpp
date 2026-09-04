@@ -21,7 +21,7 @@ int main() {
     std::cout << "\n--- UIContainer ---\n";
     auto container = std::make_unique<UIContainer>();
     assert(container != nullptr && "Container should be created");
-    assert(!container->isInteractable() && "Container should not be interactable");
+    assert(container->isInteractable() && "Container should be interactable by default");
     container->setPadding(glm::vec2(10.0f));
     assert(container->getPadding().x == 10.0f && "Padding should be set");
     container->setLayoutDirty();
@@ -34,18 +34,28 @@ int main() {
     assert(vbox != nullptr && "VBox should be created");
     vbox->setSpacing(5.0f);
     assert(vbox->getSpacing() == 5.0f && "Spacing should be set");
-    vbox->setExpandChildren(true);
-    assert(vbox->shouldExpandChildren() && "Expand children should be enabled");
     
-    // Add children to test layout
+    // "Expand children" is no longer a single container-wide flag
+    // (setExpandChildren()/shouldExpandChildren() were removed) -- it's
+    // now a per-child SizeFlag, since a real layout needs some children
+    // to expand/fill and others to stay fixed size within the same
+    // container. Fill on the cross axis (width, for a VBox) is the
+    // direct equivalent of what the old container-wide flag did.
     auto child1 = std::make_unique<UIButton>();
     child1->setSize(glm::vec2(100.0f, 30.0f));
+    child1->setSizeFlags(SizeFlag::Fill);
     auto child2 = std::make_unique<UIButton>();
     child2->setSize(glm::vec2(100.0f, 30.0f));
+    child2->setSizeFlags(SizeFlag::Fill);
+    UIButton* child1Raw = child1.get();
+    UIButton* child2Raw = child2.get();
     vbox->addChild(std::move(child1));
     vbox->addChild(std::move(child2));
     vbox->setSize(glm::vec2(200.0f, 100.0f));
     vbox->layout();
+    assert(hasFlag(child1Raw->getSizeFlags(), SizeFlag::Fill) && "Fill flag should be set on child1");
+    assert(child1Raw->getSize().x == 200.0f && "Fill child should stretch to the VBox's content width");
+    assert(child2Raw->getSize().x == 200.0f && "Fill child should stretch to the VBox's content width");
     std::cout << "[ok] UIVBox works\n";
     
     // Test UIHBox
@@ -54,8 +64,18 @@ int main() {
     assert(hbox != nullptr && "HBox should be created");
     hbox->setSpacing(10.0f);
     assert(hbox->getSpacing() == 10.0f && "Spacing should be set");
-    hbox->setExpandChildren(true);
-    assert(hbox->shouldExpandChildren() && "Expand children should be enabled");
+    
+    // Same SizeFlag equivalence as UIVBox above, transposed to the
+    // horizontal axis (Fill stretches height for an HBox's children).
+    auto hchild = std::make_unique<UIButton>();
+    hchild->setSize(glm::vec2(60.0f, 20.0f));
+    hchild->setSizeFlags(SizeFlag::Fill);
+    UIButton* hchildRaw = hchild.get();
+    hbox->addChild(std::move(hchild));
+    hbox->setSize(glm::vec2(200.0f, 50.0f));
+    hbox->layout();
+    assert(hasFlag(hchildRaw->getSizeFlags(), SizeFlag::Fill) && "Fill flag should be set on hchild");
+    assert(hchildRaw->getSize().y == 50.0f && "Fill child should stretch to the HBox's content height");
     std::cout << "[ok] UIHBox works\n";
     
     // Test UIGrid

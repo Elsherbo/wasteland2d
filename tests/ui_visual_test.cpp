@@ -16,7 +16,9 @@
 #include "ui/UIHBox.h"
 #include "ui/UIGrid.h"
 #include "ui/UIRenderer.h"
+#include "ui/UIStyle.h"
 #include "ui/UIManager.h"
+#include "ui/UIDefaultTheme.h"
 #include "ui/InputEvent.h"
 #include "render/Font.h"
 #include "render/TextRenderer.h"
@@ -73,11 +75,21 @@ int main(int argc, char* argv[]) {
     engine::render::Font font("C:\\Windows\\Fonts\\arial.ttf", 16);
     engine::render::TextRenderer textRenderer(renderer);
     
-    // Create UI renderer
-    engine::ui::UIRenderer uiRenderer(renderer, textRenderer, font);
-    
-    // Create UI manager
+    // Create UI manager first -- UIRenderer requires a UIThemeManager
+    // reference (4th constructor argument), which only exists once a
+    // UIManager has been constructed. The previous 3-argument
+    // UIRenderer(renderer, textRenderer, font) call hasn't matched the
+    // class's constructor since that parameter became required.
     engine::ui::UIManager uiManager;
+    auto& themeManager = uiManager.getThemeManager();
+    
+    // Create UI renderer
+    engine::ui::UIRenderer uiRenderer(renderer, textRenderer, font, themeManager);
+    
+    // Apply the shared flat dark theme so buttons/checkbox/slider/etc.
+    // actually render with real colors instead of the renderer's bare
+    // fallback grays -- see engine/ui/UIDefaultTheme.h.
+    engine::ui::installDefaultDarkTheme(themeManager, uiRenderer);
     
     // Get UI layer
     engine::ui::UILayer* uiLayer = uiManager.getLayer("UI");

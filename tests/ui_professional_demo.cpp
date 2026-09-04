@@ -23,6 +23,7 @@
 #include "ui/UIRenderer.h"
 #include "ui/UIStyle.h"
 #include "ui/UIManager.h"
+#include "ui/UIDefaultTheme.h"
 #include "ui/InputEvent.h"
 #include "render/Font.h"
 #include "render/TextRenderer.h"
@@ -95,8 +96,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Load font
+    // Load fonts. A separate, larger instance is used for section/page
+    // headings -- SDL_ttf has no cheap runtime resize of an open font, so
+    // a distinct heading size needs its own Font object (see Font.h).
     engine::render::Font font("C:\\Windows\\Fonts\\arial.ttf", 14);
+    engine::render::Font headingFont("C:\\Windows\\Fonts\\arial.ttf", 20);
     engine::render::TextRenderer textRenderer(renderer);
     
     // Create UI manager
@@ -105,80 +109,74 @@ int main(int argc, char* argv[]) {
     // Set up default theme with styles
     auto& themeManager = uiManager.getThemeManager();
     
-    // Button style
-    engine::ui::UIStyle buttonStyle;
-    buttonStyle.backgroundColor[engine::ui::UIState::Normal] = glm::vec4(0.39f, 0.39f, 0.39f, 1.0f);
-    buttonStyle.backgroundColor[engine::ui::UIState::Hover] = glm::vec4(0.59f, 0.59f, 0.59f, 1.0f);
-    buttonStyle.backgroundColor[engine::ui::UIState::Active] = glm::vec4(0.78f, 0.78f, 0.78f, 1.0f);
-    buttonStyle.textColor[engine::ui::UIState::Normal] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    buttonStyle.borderColor[engine::ui::UIState::Normal] = glm::vec4(0.78f, 0.78f, 0.78f, 1.0f);
-    themeManager.registerStyle("Default", "Button", buttonStyle);
-    
-    // Label style
-    engine::ui::UIStyle labelStyle;
-    labelStyle.textColor[engine::ui::UIState::Normal] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    themeManager.registerStyle("Default", "Label", labelStyle);
-    
-    // Slider style
-    engine::ui::UIStyle sliderStyle;
-    sliderStyle.backgroundColor[engine::ui::UIState::Normal] = glm::vec4(0.39f, 0.39f, 0.39f, 1.0f);
-    sliderStyle.backgroundColor[engine::ui::UIState::Hover] = glm::vec4(0.59f, 0.59f, 0.59f, 1.0f);
-    sliderStyle.backgroundColor[engine::ui::UIState::Active] = glm::vec4(0.78f, 0.78f, 0.78f, 1.0f);
-    themeManager.registerStyle("Default", "Slider", sliderStyle);
-    
-    // Checkbox style
-    engine::ui::UIStyle checkboxStyle;
-    checkboxStyle.backgroundColor[engine::ui::UIState::Normal] = glm::vec4(0.39f, 0.39f, 0.39f, 1.0f);
-    checkboxStyle.backgroundColor[engine::ui::UIState::Hover] = glm::vec4(0.59f, 0.59f, 0.59f, 1.0f);
-    checkboxStyle.backgroundColor[engine::ui::UIState::Active] = glm::vec4(0.78f, 0.78f, 0.78f, 1.0f);
-    checkboxStyle.textColor[engine::ui::UIState::Normal] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    themeManager.registerStyle("Default", "Checkbox", checkboxStyle);
-    
-    // Container style
-    engine::ui::UIStyle containerStyle;
-    containerStyle.backgroundColor[engine::ui::UIState::Normal] = glm::vec4(0.12f, 0.12f, 0.14f, 0.59f);
-    containerStyle.borderColor[engine::ui::UIState::Normal] = glm::vec4(0.39f, 0.39f, 0.39f, 1.0f);
-    themeManager.registerStyle("Default", "Container", containerStyle);
-    
     // Create UI renderer
-    engine::ui::UIRenderer uiRenderer(renderer, textRenderer, font, themeManager);
+    engine::ui::UIRenderer uiRenderer(renderer, textRenderer, font, themeManager, &headingFont);
+    
+    // Registers the flat near-black "professional" theme (Panel/Section/
+    // Transparent/Container surfaces, Button variants, Label/Label.Heading,
+    // Slider, Checkbox) and sets the renderer's accent color + corner
+    // radius. Any new scene gets the exact same palette from this one call
+    // instead of re-declaring ~10 UIStyle entries -- see UIDefaultTheme.h.
+    engine::ui::installDefaultDarkTheme(themeManager, uiRenderer);
     
     // Get UI layer
     engine::ui::UILayer* uiLayer = uiManager.getLayer("UI");
     
     // === STEP 1: Structure Setup ===
-    auto mainContainer = std::make_unique<engine::ui::UIVBox>();
+    // The whole settings screen is a UIScrollContainer ("Panel") so that
+    // if its content is ever taller than the visible window -- which it
+    // reliably is, once every section, the inventory grid, and the scroll
+    // demo are all stacked -- the user can scroll to reach everything
+    // instead of the bottom of the screen simply being cut off with no
+    // way to get to it.
+    auto mainContainer = std::make_unique<engine::ui::UIScrollContainer>();
     mainContainer->setPosition(glm::vec2(50, 30));
-    mainContainer->setSize(glm::vec2(800, 750));  // Increased from 700 to 750
-    mainContainer->setSpacing(15);
+    mainContainer->setSize(glm::vec2(800, 640));  // Fits inside the 900x700 window
     mainContainer->setPadding(glm::vec2(20));
     mainContainer->setInteractable(true);
+    mainContainer->setStyleName("Panel");
+    
+    // All actual content lives in this inner VBox. It auto-sizes to fit
+    // its own content (no more hand-picked pixel heights that silently
+    // fall out of sync with what's actually inside them), and the
+    // ScrollContainer above auto-derives its scrollable content size from
+    // this single child.
+    auto panelContent = std::make_unique<engine::ui::UIVBox>();
+    panelContent->setSpacing(15);
+    panelContent->setAutoSize(true);
+    panelContent->setInteractable(true);
+    panelContent->setStyleName("Transparent");
     
     // Header
     auto headerLabel = std::make_unique<engine::ui::UILabel>();
     headerLabel->setText("Game Settings");
-    headerLabel->setSize(glm::vec2(760, 30));
+    headerLabel->setSize(glm::vec2(760, 34));
+    headerLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
+    headerLabel->setHeading(true);
     headerLabel->setInteractable(true);
-    mainContainer->addChild(std::move(headerLabel));
+    panelContent->addChild(std::move(headerLabel));
     
     // Separator line (image placeholder)
     auto separator = std::make_unique<engine::ui::UIImage>();
     separator->setSize(glm::vec2(760, 2));
+    separator->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     separator->setTintColor(glm::vec4(0.6f, 0.6f, 0.6f, 1.0f));
     separator->setInteractable(true);
-    mainContainer->addChild(std::move(separator));
+    panelContent->addChild(std::move(separator));
     
     // === STEP 2: Graphics Section ===
     auto graphicsSection = std::make_unique<engine::ui::UIVBox>();
     graphicsSection->setSpacing(10);
     graphicsSection->setPadding(glm::vec2(15));
     graphicsSection->setSizeFlags(engine::ui::SizeFlag::Fill);  // Fill width
-    graphicsSection->setSize(glm::vec2(730, 130));
     graphicsSection->setInteractable(true);
+    graphicsSection->setStyleName("Section");
     
     auto graphicsLabel = std::make_unique<engine::ui::UILabel>();
     graphicsLabel->setText("Graphics Settings");
-    graphicsLabel->setSize(glm::vec2(730, 20));
+    graphicsLabel->setSize(glm::vec2(730, 26));
+    graphicsLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
+    graphicsLabel->setHeading(true);
     graphicsLabel->setInteractable(true);
     graphicsSection->addChild(std::move(graphicsLabel));
     
@@ -186,6 +184,7 @@ int main(int argc, char* argv[]) {
     auto resolutionSlider = std::make_unique<engine::ui::UISliderContainer>();
     resolutionSlider->setLabelText("Resolution");
     resolutionSlider->setSize(glm::vec2(700, 30));
+    resolutionSlider->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     resolutionSlider->setShowValueLabel(true);
     resolutionSlider->setSliderValue(settings.resolution);
     resolutionSlider->setInteractable(true);
@@ -199,6 +198,7 @@ int main(int argc, char* argv[]) {
     auto qualitySlider = std::make_unique<engine::ui::UISliderContainer>();
     qualitySlider->setLabelText("Quality");
     qualitySlider->setSize(glm::vec2(700, 30));
+    qualitySlider->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     qualitySlider->setShowValueLabel(true);
     qualitySlider->setSliderValue(settings.quality / 3.0f);
     qualitySlider->setInteractable(true);
@@ -212,6 +212,7 @@ int main(int argc, char* argv[]) {
     auto vsyncCheckbox = std::make_unique<engine::ui::UICheckbox>();
     vsyncCheckbox->setText("VSync");
     vsyncCheckbox->setSize(glm::vec2(730, 25));
+    vsyncCheckbox->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     vsyncCheckbox->setChecked(settings.vsync);
     vsyncCheckbox->onCheckedChanged = [](bool checked) {
         settings.vsync = checked;
@@ -219,19 +220,21 @@ int main(int argc, char* argv[]) {
     };
     graphicsSection->addChild(std::move(vsyncCheckbox));
     
-    mainContainer->addChild(std::move(graphicsSection));
+    panelContent->addChild(std::move(graphicsSection));
     
     // === STEP 3: Audio Section ===
     auto audioSection = std::make_unique<engine::ui::UIVBox>();
     audioSection->setSpacing(10);
     audioSection->setPadding(glm::vec2(15));
     audioSection->setSizeFlags(engine::ui::SizeFlag::Fill);  // Fill width
-    audioSection->setSize(glm::vec2(730, 130));
     audioSection->setInteractable(true);
+    audioSection->setStyleName("Section");
     
     auto audioLabel = std::make_unique<engine::ui::UILabel>();
     audioLabel->setText("Audio Settings");
-    audioLabel->setSize(glm::vec2(730, 20));
+    audioLabel->setSize(glm::vec2(730, 26));
+    audioLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
+    audioLabel->setHeading(true);
     audioLabel->setInteractable(true);
     audioSection->addChild(std::move(audioLabel));
     
@@ -239,6 +242,7 @@ int main(int argc, char* argv[]) {
     auto masterVolumeSlider = std::make_unique<engine::ui::UISliderContainer>();
     masterVolumeSlider->setLabelText("Master Volume");
     masterVolumeSlider->setSize(glm::vec2(700, 30));
+    masterVolumeSlider->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     masterVolumeSlider->setShowValueLabel(true);
     masterVolumeSlider->setSliderValue(settings.masterVolume / 100.0f);
     masterVolumeSlider->setInteractable(true);
@@ -252,6 +256,7 @@ int main(int argc, char* argv[]) {
     auto musicVolumeSlider = std::make_unique<engine::ui::UISliderContainer>();
     musicVolumeSlider->setLabelText("Music Volume");
     musicVolumeSlider->setSize(glm::vec2(700, 30));
+    musicVolumeSlider->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     musicVolumeSlider->setShowValueLabel(true);
     musicVolumeSlider->setSliderValue(settings.musicVolume / 100.0f);
     musicVolumeSlider->setInteractable(true);
@@ -265,6 +270,7 @@ int main(int argc, char* argv[]) {
     auto sfxVolumeSlider = std::make_unique<engine::ui::UISliderContainer>();
     sfxVolumeSlider->setLabelText("SFX Volume");
     sfxVolumeSlider->setSize(glm::vec2(700, 30));
+    sfxVolumeSlider->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     sfxVolumeSlider->setShowValueLabel(true);
     sfxVolumeSlider->setSliderValue(settings.sfxVolume / 100.0f);
     sfxVolumeSlider->setInteractable(true);
@@ -274,25 +280,28 @@ int main(int argc, char* argv[]) {
     };
     audioSection->addChild(std::move(sfxVolumeSlider));
     
-    mainContainer->addChild(std::move(audioSection));
+    panelContent->addChild(std::move(audioSection));
     
     // === STEP 4: Options Section ===
     auto optionsSection = std::make_unique<engine::ui::UIVBox>();
     optionsSection->setSpacing(8);
     optionsSection->setPadding(glm::vec2(15));
     optionsSection->setSizeFlags(engine::ui::SizeFlag::Fill);  // Fill width
-    optionsSection->setSize(glm::vec2(730, 100));
     optionsSection->setInteractable(true);
+    optionsSection->setStyleName("Section");
     
     auto optionsLabel = std::make_unique<engine::ui::UILabel>();
     optionsLabel->setText("Game Options");
-    optionsLabel->setSize(glm::vec2(730, 20));
+    optionsLabel->setSize(glm::vec2(730, 26));
+    optionsLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
+    optionsLabel->setHeading(true);
     optionsLabel->setInteractable(true);
     optionsSection->addChild(std::move(optionsLabel));
     
     auto showFpsCheckbox = std::make_unique<engine::ui::UICheckbox>();
     showFpsCheckbox->setText("Show FPS");
     showFpsCheckbox->setSize(glm::vec2(700, 25));
+    showFpsCheckbox->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     showFpsCheckbox->setChecked(settings.showFps);
     showFpsCheckbox->onCheckedChanged = [](bool checked) {
         settings.showFps = checked;
@@ -303,6 +312,7 @@ int main(int argc, char* argv[]) {
     auto fullscreenCheckbox = std::make_unique<engine::ui::UICheckbox>();
     fullscreenCheckbox->setText("Fullscreen Mode");
     fullscreenCheckbox->setSize(glm::vec2(700, 25));
+    fullscreenCheckbox->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     fullscreenCheckbox->setChecked(settings.fullscreen);
     fullscreenCheckbox->onCheckedChanged = [](bool checked) {
         settings.fullscreen = checked;
@@ -313,6 +323,7 @@ int main(int argc, char* argv[]) {
     auto debugCheckbox = std::make_unique<engine::ui::UICheckbox>();
     debugCheckbox->setText("Enable Debug Mode");
     debugCheckbox->setSize(glm::vec2(700, 25));
+    debugCheckbox->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     debugCheckbox->setChecked(settings.debugMode);
     debugCheckbox->onCheckedChanged = [](bool checked) {
         settings.debugMode = checked;
@@ -320,14 +331,14 @@ int main(int argc, char* argv[]) {
     };
     optionsSection->addChild(std::move(debugCheckbox));
     
-    mainContainer->addChild(std::move(optionsSection));
+    panelContent->addChild(std::move(optionsSection));
     
     // === STEP 5: Actions Section ===
     auto actionsSection = std::make_unique<engine::ui::UIHBox>();
     actionsSection->setSpacing(10);
     actionsSection->setPadding(glm::vec2(15));
-    actionsSection->setSize(glm::vec2(730, 50));
     actionsSection->setInteractable(true);
+    actionsSection->setStyleName("Transparent");
     
     auto applyButton = std::make_unique<engine::ui::UIButton>();
     applyButton->setText("Apply");
@@ -372,14 +383,16 @@ int main(int argc, char* argv[]) {
     };
     actionsSection->addChild(std::move(defaultsButton));
     
-    mainContainer->addChild(std::move(actionsSection));
+    panelContent->addChild(std::move(actionsSection));
     
     // === STEP 6: Grid Demo ===
     auto gridLabel = std::make_unique<engine::ui::UILabel>();
     gridLabel->setText("Inventory Grid Demo");
-    gridLabel->setSize(glm::vec2(760, 20));
+    gridLabel->setSize(glm::vec2(760, 26));
+    gridLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
+    gridLabel->setHeading(true);
     gridLabel->setInteractable(true);
-    mainContainer->addChild(std::move(gridLabel));
+    panelContent->addChild(std::move(gridLabel));
     
     auto inventoryGrid = std::make_unique<engine::ui::UIGrid>();
     inventoryGrid->setColumns(3);
@@ -387,8 +400,13 @@ int main(int argc, char* argv[]) {
     inventoryGrid->setCellWidth(80.0f);
     inventoryGrid->setCellHeight(80.0f);
     inventoryGrid->setSpacing(5.0f);
+    // NOTE: UIGrid doesn't compute a real calculateMinSize() from its
+    // rows/columns/cell size the way UIVBox/UIHBox do, so this still has
+    // to be sized by hand to match rows*cellHeight + spacing. Worth fixing
+    // in UIGrid itself as a follow-up so grids can auto-size too.
     inventoryGrid->setSize(glm::vec2(250, 335));  // Increased height to fit 4 rows
     inventoryGrid->setInteractable(true);
+    inventoryGrid->setStyleName("Section");
     
     // Add 12 items to grid (4 rows x 3 columns)
     for (int i = 1; i <= 12; i++) {
@@ -401,18 +419,21 @@ int main(int argc, char* argv[]) {
         inventoryGrid->addChild(std::move(itemImage));
     }
     
-    mainContainer->addChild(std::move(inventoryGrid));
+    panelContent->addChild(std::move(inventoryGrid));
     
     // === STEP 7: Scroll Demo ===
     auto scrollLabel = std::make_unique<engine::ui::UILabel>();
     scrollLabel->setText("Scrollable List Demo");
     scrollLabel->setSize(glm::vec2(760, 20));
+    scrollLabel->setSizeFlags(engine::ui::SizeFlag::Fill);  // width tracks actual parent content area
     scrollLabel->setInteractable(true);
-    mainContainer->addChild(std::move(scrollLabel));
+    panelContent->addChild(std::move(scrollLabel));
     
     auto scrollContainer = std::make_unique<engine::ui::UIScrollContainer>();
     scrollContainer->setSize(glm::vec2(400, 100));
-    scrollContainer->setContentSize(glm::vec2(400, 250));  // Increased from 150 to 250
+    // No setContentSize() call needed: with a single child, UIScrollContainer
+    // now derives its scrollable content size from that child's own
+    // calculateMinSize() every layout pass.
     scrollContainer->setInteractable(true);
     scrollContainer->setVisible(true);
     
@@ -421,6 +442,7 @@ int main(int argc, char* argv[]) {
     scrollContent->setPadding(glm::vec2(10));
     scrollContent->setInteractable(true);
     scrollContent->setVisible(true);
+    scrollContent->setStyleName("Transparent");
     
     for (int i = 1; i <= 5; i++) {
         auto itemLabel = std::make_unique<engine::ui::UILabel>();
@@ -432,9 +454,10 @@ int main(int argc, char* argv[]) {
     }
     
     scrollContainer->addChild(std::move(scrollContent));
-    mainContainer->addChild(std::move(scrollContainer));
+    panelContent->addChild(std::move(scrollContainer));
     
     // Layout and add to layer
+    mainContainer->addChild(std::move(panelContent));
     mainContainer->layout();
     uiLayer->addComponent(mainContainer.get());
     
@@ -484,8 +507,14 @@ int main(int argc, char* argv[]) {
                 );
                 uiManager.dispatchInput(inputEvent);
             } else if (event.type == SDL_MOUSEWHEEL) {
-                // Convert wheel delta (positive = scroll down)
-                float delta = event.wheel.y > 0 ? 1.0f : -1.0f;
+                // Convert wheel delta (positive = scroll down). SDL negates
+                // wheel.y when SDL_MOUSEWHEEL_FLIPPED is set (natural
+                // scrolling on some mice/trackpads) -- normalize it the
+                // same way InputManager::update() already does for its own
+                // mouseWheelDelta(), or this comes out backwards on any
+                // system reporting that flag.
+                int rawY = (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) ? -event.wheel.y : event.wheel.y;
+                float delta = rawY > 0 ? 1.0f : -1.0f;
                 engine::ui::InputEvent inputEvent = engine::ui::InputEvent::mouseWheel(
                     static_cast<float>(event.wheel.mouseX),
                     static_cast<float>(event.wheel.mouseY),
@@ -499,7 +528,7 @@ int main(int argc, char* argv[]) {
         uiManager.update(0.016);
         
         // Clear screen
-        SDL_SetRenderDrawColor(renderer, 26, 26, 46, 255);
+        SDL_SetRenderDrawColor(renderer, 6, 6, 8, 255);  // near-black window background
         SDL_RenderClear(renderer);
         
         // Render UI

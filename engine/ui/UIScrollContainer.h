@@ -28,6 +28,7 @@ public:
     
     // Layout
     void layout() override;
+    glm::vec2 calculateMinSize() const override;
     
     // Update (for scroll input)
     void update(double dt) override;
@@ -43,7 +44,7 @@ private:
     bool isPointInScrollbarThumb(glm::vec2 point) const;
     bool isPointInScrollbarTrack(glm::vec2 point) const;
     
-    glm::vec2 contentSize_ = glm::vec2(100.0f, 100.0f);
+    glm::vec2 contentSize_ = glm::vec2(0.0f, 0.0f);  // Zero means auto-derive from child
     glm::vec2 scrollPosition_ = glm::vec2(0.0f);
     bool horizontalScroll_ = false;
     bool verticalScroll_ = true;

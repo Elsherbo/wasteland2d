@@ -72,8 +72,19 @@ void UIComponent::guiInput(const InputEvent& event) {
     for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
         if ((*it)->isVisible() && (*it)->isInteractable()) {
             (*it)->guiInput(event);
-            // If child accepted the event, stop propagating
+            // If child accepted the event, stop propagating -- and mark
+            // *this* container as having accepted it too. Without this,
+            // acceptance only ever reaches whoever directly called
+            // guiInput() on the accepting component: every ancestor above
+            // that checks its *own* eventAccepted_ flag, which nothing
+            // here ever set, so an ancestor's own accept-check (e.g.
+            // UIScrollContainer::guiInput()'s "give nested content first
+            // refusal" logic for mouse wheel) always reads false and the
+            // event gets handled a second time further up the tree --
+            // which is exactly why scrolling a nested scroll region was
+            // also scrolling the outer one.
             if ((*it)->isEventAccepted()) {
+                acceptEvent();
                 return;
             }
         }

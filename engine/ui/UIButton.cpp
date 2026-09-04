@@ -120,12 +120,22 @@ glm::vec2 UIButton::calculateMinSize() const {
     
     // Respect custom minimum size if set
     glm::vec2 calculatedMin(estimatedWidth, estimatedHeight);
-    if (customMinimumSize_.x > 0.0f) calculatedMin.x = customMinimumSize_.x;
-    if (customMinimumSize_.y > 0.0f) calculatedMin.y = customMinimumSize_.y;
+    bool customWidthSet = customMinimumSize_.x > 0.0f;
+    bool customHeightSet = customMinimumSize_.y > 0.0f;
+    if (customWidthSet) calculatedMin.x = customMinimumSize_.x;
+    if (customHeightSet) calculatedMin.y = customMinimumSize_.y;
     
-    // Ensure minimum size
-    if (calculatedMin.x < 80.0f) calculatedMin.x = 80.0f;
-    if (calculatedMin.y < 30.0f) calculatedMin.y = 30.0f;
+    // Ensure a comfortable default tap-target size -- but only on axes
+    // that weren't explicitly overridden above. A caller who sets a
+    // smaller customMinimumSize_ on purpose (a compact icon/number-only
+    // slot button, e.g. a hotbar) means it; silently re-flooring that
+    // back up to 80x30 defeats the entire purpose of customMinimumSize_
+    // existing, and previously did exactly that -- every button was
+    // forced to at least 80px wide regardless of setSize()/
+    // setCustomMinimumSize(), which is what made a hotbar of 56px slots
+    // actually render at 80px each and overflow its intended layout.
+    if (!customWidthSet && calculatedMin.x < 80.0f) calculatedMin.x = 80.0f;
+    if (!customHeightSet && calculatedMin.y < 30.0f) calculatedMin.y = 30.0f;
     
     return calculatedMin;
 }

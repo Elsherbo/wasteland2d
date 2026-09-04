@@ -160,6 +160,12 @@ void UIManager::render(Renderer& renderer) {
 
 void UIManager::update(double dt) {
     layerManager_.updateAll(dt);
+    // Re-apply layout for anything marked dirty this frame (scrolling,
+    // dynamic content, resizing, ...). Previously nothing after the very
+    // first frame ever called layout() again, so state changes like
+    // scroll position updated internally but were never reflected in
+    // actual child positions on screen.
+    layerManager_.layoutAll();
     updateStates(dt);
 }
 

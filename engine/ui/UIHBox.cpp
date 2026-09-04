@@ -1,4 +1,5 @@
 #include "UIHBox.h"
+#include <algorithm>
 
 namespace engine::ui {
 
@@ -8,6 +9,13 @@ UIHBox::UIHBox() {
 void UIHBox::layout() {
     if (!isLayoutDirty()) {
         return;
+    }
+    
+    // If auto-sizing, resize this container to exactly fit its content
+    // before measuring against it, instead of laying out into whatever
+    // (possibly stale/hand-picked) size_ currently holds.
+    if (getAutoSize()) {
+        setSize(calculateMinSize());
     }
     
     glm::vec2 contentArea = getContentArea();
@@ -48,9 +56,11 @@ void UIHBox::layout() {
         }
     }
     
-    // Calculate available space for expansion
+    // Calculate available space for expansion (see UIVBox::layout() for why
+    // spacing has to be subtracted here too, not just in calculateMinSize()).
+    float totalSpacing = childInfos.size() > 1 ? spacing_ * static_cast<float>(childInfos.size() - 1) : 0.0f;
     float availableWidth = contentArea.x;
-    float extraWidth = availableWidth - totalDesiredWidth;
+    float extraWidth = availableWidth - totalDesiredWidth - totalSpacing;
     
     // Second pass: Distribute extra space to expanding children
     for (auto& info : childInfos) {
@@ -101,10 +111,16 @@ glm::vec2 UIHBox::calculateMinSize() const {
         
         visibleCount++;
         
+        // See UIVBox::calculateMinSize() for why this uses max(getSize(),
+        // calculateMinSize()) instead of the raw minimum -- same mismatch,
+        // same fix, transposed to the horizontal axis.
         glm::vec2 childMinSize = child->calculateMinSize();
+        glm::vec2 childActual = child->getSize();
+        float effectiveWidth = std::max(childMinSize.x, childActual.x);
+        float effectiveHeight = std::max(childMinSize.y, childActual.y);
         
-        totalWidth += childMinSize.x;
-        if (childMinSize.y > maxHeight) maxHeight = childMinSize.y;
+        totalWidth += effectiveWidth;
+        if (effectiveHeight > maxHeight) maxHeight = effectiveHeight;
     }
     
     // Add spacing between children

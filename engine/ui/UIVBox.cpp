@@ -1,4 +1,5 @@
 #include "UIVBox.h"
+#include <algorithm>
 
 namespace engine::ui {
 
@@ -8,6 +9,13 @@ UIVBox::UIVBox() {
 void UIVBox::layout() {
     if (!isLayoutDirty()) {
         return;
+    }
+    
+    // If auto-sizing, resize this container to exactly fit its content
+    // before measuring against it, instead of laying out into whatever
+    // (possibly stale/hand-picked) size_ currently holds.
+    if (getAutoSize()) {
+        setSize(calculateMinSize());
     }
     
     glm::vec2 contentArea = getContentArea();
@@ -48,9 +56,15 @@ void UIVBox::layout() {
         }
     }
     
-    // Calculate available space for expansion
+    // Calculate available space for expansion. Spacing between children is
+    // consumed space just like their own height -- calculateMinSize() already
+    // accounts for it (spacing_ * (visibleCount - 1)), so this must too, or
+    // extraHeight is overestimated and the positioning pass below (which does
+    // add spacing_ between children) pushes later children past the bottom
+    // of the container by spacing_ * (n - 1).
+    float totalSpacing = childInfos.size() > 1 ? spacing_ * static_cast<float>(childInfos.size() - 1) : 0.0f;
     float availableHeight = contentArea.y;
-    float extraHeight = availableHeight - totalDesiredHeight;
+    float extraHeight = availableHeight - totalDesiredHeight - totalSpacing;
     
     // Second pass: Distribute extra space to expanding children
     for (auto& info : childInfos) {
@@ -101,10 +115,24 @@ glm::vec2 UIVBox::calculateMinSize() const {
         
         visibleCount++;
         
+        // A child's *effective* size for measurement is whatever its own
+        // layout() will actually give it -- its explicitly-set size where
+        // that's larger than its reported minimum, not the bare minimum
+        // alone. layout()'s own first pass already does exactly this
+        // (childSize = max(getSize(), calculateMinSize())) before placing
+        // children; summing only the raw calculateMinSize() here instead
+        // meant this container could report itself smaller than what it's
+        // about to actually lay its children out to. That's precisely
+        // what let a 30px-tall slider row (whose own calculateMinSize()
+        // is only ~20px) push past the bottom of a section card that had
+        // been sized using the smaller, wrong figure.
         glm::vec2 childMinSize = child->calculateMinSize();
+        glm::vec2 childActual = child->getSize();
+        float effectiveHeight = std::max(childMinSize.y, childActual.y);
+        float effectiveWidth = std::max(childMinSize.x, childActual.x);
         
-        totalHeight += childMinSize.y;
-        if (childMinSize.x > maxWidth) maxWidth = childMinSize.x;
+        totalHeight += effectiveHeight;
+        if (effectiveWidth > maxWidth) maxWidth = effectiveWidth;
     }
     
     // Add spacing between children
