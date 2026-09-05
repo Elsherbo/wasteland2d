@@ -5,17 +5,23 @@
 #include "ui/UIImage.h"
 #include "ui/UISlider.h"
 #include "ui/UICheckbox.h"
+#include "core/Logger.h"
 #include <glm/vec4.hpp>
 #include <cassert>
-#include <iostream>
 
 using namespace engine::ui;
 
 int main() {
-    std::cout << "Testing Basic UI Components...\n";
+    // Initialize logger
+    engine::LoggerConfig config;
+    config.level = engine::LogLevel::Info;
+    config.enableColors = true;
+    engine::Logger::init(config);
+    
+    LOG_INFO(engine::LogCategory::UI, "Testing Basic UI Components...");
     
     // Test UIButton
-    std::cout << "\n--- UIButton ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIButton ---");
     auto button = std::make_unique<UIButton>();
     assert(button != nullptr && "Button should be created");
     assert(button->isInteractable() && "Button should be interactable");
@@ -27,10 +33,10 @@ int main() {
     assert(button->isToggleMode() && "Toggle mode should be enabled");
     button->setToggled(true);
     assert(button->isToggled() && "Button should be toggled");
-    std::cout << "[ok] UIButton works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIButton works");
     
     // Test UILabel
-    std::cout << "\n--- UILabel ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UILabel ---");
     auto label = std::make_unique<UILabel>();
     assert(label != nullptr && "Label should be created");
     assert(!label->isInteractable() && "Label should not be interactable");
@@ -40,10 +46,10 @@ int main() {
     assert(label->isWordWrap() && "Word wrap should be enabled");
     label->setAlignment(TextAlignment::Center);
     assert(label->getAlignment() == TextAlignment::Center && "Alignment should be center");
-    std::cout << "[ok] UILabel works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UILabel works");
     
     // Test UIImage
-    std::cout << "\n--- UIImage ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIImage ---");
     auto image = std::make_unique<UIImage>();
     assert(image != nullptr && "Image should be created");
     assert(!image->isInteractable() && "Image should not be interactable");
@@ -55,10 +61,10 @@ int main() {
     assert(!image->preserveAspect() && "Preserve aspect should be false");
     image->setTintColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     assert(image->getTintColor().r == 1.0f && "Tint color should be set");
-    std::cout << "[ok] UIImage works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIImage works");
     
     // Test UISlider
-    std::cout << "\n--- UISlider ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UISlider ---");
     auto slider = std::make_unique<UISlider>();
     assert(slider != nullptr && "Slider should be created");
     assert(slider->isInteractable() && "Slider should be interactable");
@@ -75,10 +81,10 @@ int main() {
     assert(slider->getThumbImage() == "thumb.png" && "Thumb image should be set");
     slider->setThumbSize(20.0f);
     assert(slider->getThumbSize() == 20.0f && "Thumb size should be 20.0");
-    std::cout << "[ok] UISlider works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UISlider works");
     
     // Test UICheckbox
-    std::cout << "\n--- UICheckbox ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UICheckbox ---");
     auto checkbox = std::make_unique<UICheckbox>();
     assert(checkbox != nullptr && "Checkbox should be created");
     assert(checkbox->isInteractable() && "Checkbox should be interactable");
@@ -91,8 +97,10 @@ int main() {
     assert(checkbox->getUncheckedImage() == "unchecked.png" && "Unchecked image should be set");
     checkbox->setCheckedImage("checked.png");
     assert(checkbox->getCheckedImage() == "checked.png" && "Checked image should be set");
-    std::cout << "[ok] UICheckbox works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UICheckbox works");
     
-    std::cout << "\nALL BASIC UI COMPONENT TESTS PASSED\n";
+    LOG_INFO(engine::LogCategory::UI, "ALL BASIC UI COMPONENT TESTS PASSED");
+    
+    engine::Logger::shutdown();
     return 0;
 }

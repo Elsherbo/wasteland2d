@@ -8,17 +8,23 @@
 #include "ui/UIButton.h"
 #include "ui/UILabel.h"
 #include "ui/UIStyle.h"
+#include "core/Logger.h"
 #include <glm/vec2.hpp>
 #include <cassert>
-#include <iostream>
 
 using namespace engine::ui;
 
 int main() {
-    std::cout << "Testing UI Container System...\n";
+    // Initialize logger
+    engine::LoggerConfig config;
+    config.level = engine::LogLevel::Info;
+    config.enableColors = true;
+    engine::Logger::init(config);
+    
+    LOG_INFO(engine::LogCategory::UI, "Testing UI Container System...");
     
     // Test UIContainer
-    std::cout << "\n--- UIContainer ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIContainer ---");
     auto container = std::make_unique<UIContainer>();
     assert(container != nullptr && "Container should be created");
     assert(container->isInteractable() && "Container should be interactable by default");
@@ -26,10 +32,10 @@ int main() {
     assert(container->getPadding().x == 10.0f && "Padding should be set");
     container->setLayoutDirty();
     assert(container->isLayoutDirty() && "Layout should be dirty");
-    std::cout << "[ok] UIContainer works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIContainer works");
     
     // Test UIVBox
-    std::cout << "\n--- UIVBox ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIVBox ---");
     auto vbox = std::make_unique<UIVBox>();
     assert(vbox != nullptr && "VBox should be created");
     vbox->setSpacing(5.0f);
@@ -56,10 +62,10 @@ int main() {
     assert(hasFlag(child1Raw->getSizeFlags(), SizeFlag::Fill) && "Fill flag should be set on child1");
     assert(child1Raw->getSize().x == 200.0f && "Fill child should stretch to the VBox's content width");
     assert(child2Raw->getSize().x == 200.0f && "Fill child should stretch to the VBox's content width");
-    std::cout << "[ok] UIVBox works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIVBox works");
     
     // Test UIHBox
-    std::cout << "\n--- UIHBox ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIHBox ---");
     auto hbox = std::make_unique<UIHBox>();
     assert(hbox != nullptr && "HBox should be created");
     hbox->setSpacing(10.0f);
@@ -76,10 +82,10 @@ int main() {
     hbox->layout();
     assert(hasFlag(hchildRaw->getSizeFlags(), SizeFlag::Fill) && "Fill flag should be set on hchild");
     assert(hchildRaw->getSize().y == 50.0f && "Fill child should stretch to the HBox's content height");
-    std::cout << "[ok] UIHBox works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIHBox works");
     
     // Test UIGrid
-    std::cout << "\n--- UIGrid ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIGrid ---");
     auto grid = std::make_unique<UIGrid>();
     assert(grid != nullptr && "Grid should be created");
     grid->setColumns(5);
@@ -92,20 +98,20 @@ int main() {
     assert(grid->getCellHeight() == 32.0f && "Cell height should be set");
     grid->setSpacing(2.0f);
     assert(grid->getSpacing() == 2.0f && "Spacing should be set");
-    std::cout << "[ok] UIGrid works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIGrid works");
     
     // Test UISliderContainer
-    std::cout << "\n--- UISliderContainer ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UISliderContainer ---");
     auto sliderContainer = std::make_unique<UISliderContainer>();
     assert(sliderContainer != nullptr && "SliderContainer should be created");
     assert(sliderContainer->getSlider() != nullptr && "Slider should exist");
     assert(sliderContainer->getLabel() != nullptr && "Label should exist");
     assert(sliderContainer->getValueLabel() != nullptr && "Value label should exist");
     sliderContainer->setLabelText("Volume");
-    std::cout << "[ok] UISliderContainer works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UISliderContainer works");
     
     // Test UIScrollContainer
-    std::cout << "\n--- UIScrollContainer ---\n";
+    LOG_INFO(engine::LogCategory::UI, "--- UIScrollContainer ---");
     auto scrollContainer = std::make_unique<UIScrollContainer>();
     assert(scrollContainer != nullptr && "ScrollContainer should be created");
     scrollContainer->setContentSize(glm::vec2(500.0f, 500.0f));
@@ -118,8 +124,10 @@ int main() {
     assert(scrollContainer->isHorizontalScrollEnabled() && "Horizontal scroll should be enabled");
     scrollContainer->setVerticalScrollEnabled(true);
     assert(scrollContainer->isVerticalScrollEnabled() && "Vertical scroll should be enabled");
-    std::cout << "[ok] UIScrollContainer works\n";
+    LOG_INFO(engine::LogCategory::UI, "[ok] UIScrollContainer works");
     
-    std::cout << "\nALL UI CONTAINER TESTS PASSED\n";
+    LOG_INFO(engine::LogCategory::UI, "ALL UI CONTAINER TESTS PASSED");
+    
+    engine::Logger::shutdown();
     return 0;
 }
