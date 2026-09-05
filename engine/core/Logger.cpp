@@ -18,23 +18,24 @@ FILE* Logger::logFile_ = nullptr;
 // Cross-platform color codes
 namespace ConsoleColors {
 #ifdef _WIN32
-    // Windows console colors
-    inline void setColor(int color) {
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+    // Windows console colors - use ANSI escape codes with virtual terminal processing
+    const char* Reset = "\033[0m";
+    const char* Gray = "\033[90m";
+    const char* Blue = "\033[34m";
+    const char* Green = "\033[32m";
+    const char* Yellow = "\033[33m";
+    const char* Red = "\033[31m";
+    const char* Magenta = "\033[35m";
+    const char* White = "\033[37m";
+    const char* BrightRed = "\033[91m";
+    
+    inline void setColor(const char* color) {
+        std::cout << color;
     }
     
     inline void resetColor() {
-        setColor(15); // White
+        std::cout << Reset;
     }
-    
-    const int Gray = 8;
-    const int Blue = 9;
-    const int Green = 10;
-    const int Yellow = 14;
-    const int Red = 12;
-    const int Magenta = 13;
-    const int White = 15;
-    const int BrightRed = 12; // Can be enhanced with intense colors
 #else
     // Unix ANSI color codes
     const char* Reset = "\033[0m";
@@ -78,8 +79,7 @@ std::string getTimestamp() {
 }
 
 // Get color for log level
-int getLevelColor(LogLevel level) {
-#ifdef _WIN32
+const char* getLevelColor(LogLevel level) {
     switch (level) {
         case LogLevel::Debug:   return ConsoleColors::Gray;
         case LogLevel::Info:    return ConsoleColors::Green;
@@ -88,16 +88,6 @@ int getLevelColor(LogLevel level) {
         case LogLevel::Fatal:   return ConsoleColors::BrightRed;
         default:               return ConsoleColors::White;
     }
-#else
-    switch (level) {
-        case LogLevel::Debug:   return reinterpret_cast<int>(ConsoleColors::Gray);
-        case LogLevel::Info:    return reinterpret_cast<int>(ConsoleColors::Green);
-        case LogLevel::Warning: return reinterpret_cast<int>(ConsoleColors::Yellow);
-        case LogLevel::Error:   return reinterpret_cast<int>(ConsoleColors::Red);
-        case LogLevel::Fatal:   return reinterpret_cast<int>(ConsoleColors::BrightRed);
-        default:               return reinterpret_cast<int>(ConsoleColors::White);
-    }
-#endif
 }
 
 // Get level name as string
@@ -160,19 +150,18 @@ void Logger::log(LogLevel level, const char* category, const char* message) {
     
     std::ostringstream output;
     
+    // Set color at the start
+    if (config_.enableColors) {
+        ConsoleColors::setColor(getLevelColor(level));
+    }
+    
     // Add timestamp if enabled
     if (config_.enableTimestamps) {
         output << "[" << getTimestamp() << "] ";
     }
     
     // Add level
-    if (config_.enableColors) {
-        ConsoleColors::setColor(getLevelColor(level));
-    }
     output << "[" << getLevelName(level) << "] ";
-    if (config_.enableColors) {
-        ConsoleColors::resetColor();
-    }
     
     // Add category if enabled
     if (config_.enableCategories) {
@@ -182,9 +171,9 @@ void Logger::log(LogLevel level, const char* category, const char* message) {
     // Add message
     output << message;
     
-    // Reset color if needed
+    // Reset color at the end
     if (config_.enableColors) {
-        ConsoleColors::resetColor();
+        output << ConsoleColors::Reset;
     }
     
     // Output to console
