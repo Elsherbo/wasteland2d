@@ -105,6 +105,7 @@ set(GAME_SOURCES
     "game/main.cpp"
     "game/Game.cpp"
     "game/GameScene.cpp"
+    "game/ui/PauseMenu.cpp"
     "game/data/ItemDatabase.cpp"
 )
 add_executable(wasteland2d ${GAME_SOURCES})
