@@ -28,8 +28,14 @@ void Game::initialize() {
     engine::ServiceLocator::provide<engine::SystemRegistry>(&systemRegistry_);
     engine::ServiceLocator::provide<engine::entities::EntityFactory>(&entityFactory_);
     
-    // Load game scene
-    auto gameScene = std::make_unique<GameScene>(registry_);
+    // Load game scene. window()/input() are passed through so GameScene
+    // can build and drive its PauseMenu (a real SDL_Renderer* to
+    // construct a UIRenderer against, and polled mouse state each
+    // frame); the quit callback lets the menu's "Quit to Desktop"
+    // button actually quit rather than being a dead button.
+    auto gameScene = std::make_unique<GameScene>(
+        registry_, application_->window(), application_->input(),
+        [this]() { stop(); });
     sceneManager_.loadScene(std::move(gameScene));
     
     // Setup application callbacks
