@@ -2,6 +2,7 @@
 #include "core/Logger.h"
 
 #include <stdexcept>
+#include <SDL.h>
 
 namespace engine {
 
@@ -82,6 +83,15 @@ void Window::setFullscreen(bool enabled) {
     }
 
     fullscreen_ = enabled;
+    
+    // Update width/height after fullscreen change
+    if (enabled) {
+        SDL_GetWindowSize(window_, &width_, &height_);
+    } else {
+        // Restore to previous windowed size (could store this in Window)
+        SDL_GetWindowSize(window_, &width_, &height_);
+    }
+    
     LOG_INFO(LogCategory::Core, "Fullscreen", enabled ? "enabled" : "disabled");
 }
 

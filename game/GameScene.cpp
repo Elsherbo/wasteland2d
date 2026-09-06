@@ -39,6 +39,7 @@ void GameScene::update(double dt) {
     // conflicting behavior to remove there -- this is a clean, purely
     // additive interception via GameScene's own input polling.
     if (pauseMenu_ && input_.wasPressed(engine::Action::Pause)) {
+        LOG_INFO(engine::LogCategory::Core, "ESC pressed, current pause menu state: {}", pauseMenu_->isOpen());
         if (pauseMenu_->isOpen()) {
             pauseMenu_->setOpen(false);  // Close if open
         } else {

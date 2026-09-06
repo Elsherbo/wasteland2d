@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <glm/vec2.hpp>
+#include <SDL.h>
 
 #include "core/Logger.h"
 #include "core/Window.h"
@@ -102,6 +103,12 @@ void PauseMenu::buildUI(int screenWidth, int screenHeight) {
     fullscreenCheckbox->onCheckedChanged = [this](bool checked) {
         if (window_) {
             window_->setFullscreen(checked);
+            // Rebuild UI after fullscreen change to handle new dimensions
+            if (window_->handle()) {
+                int w, h;
+                SDL_GetWindowSize(window_->handle(), &w, &h);
+                rebuildUI(w, h);
+            }
         }
     };
     graphicsSection->addChild(std::move(fullscreenCheckbox));
@@ -200,6 +207,16 @@ void PauseMenu::buildUI(int screenWidth, int screenHeight) {
     // dispatchInput() has nothing to route clicks/hover to either.
     // Both demos do this; this was a plain omission here.
     uiManager_.getLayer("UI")->addComponent(root_.get());
+}
+
+void PauseMenu::rebuildUI(int screenWidth, int screenHeight) {
+    // Remove old root from layer
+    if (root_) {
+        uiManager_.getLayer("UI")->removeComponent(root_.get());
+    }
+    
+    // Rebuild UI with new dimensions
+    buildUI(screenWidth, screenHeight);
 }
 
 void PauseMenu::handleInput(engine::InputManager& input) {

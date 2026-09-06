@@ -54,6 +54,9 @@ public:
     }
     void toggle() { open_ = !open_; }
     
+    // Rebuild UI for new window size (e.g., after fullscreen change)
+    void rebuildUI(int screenWidth, int screenHeight);
+    
     // Polls InputManager's current mouse state (position/buttons/wheel)
     // and feeds it into this menu's own UIManager, the same shape both
     // UI demos feed from raw SDL events -- just pull-based here since
