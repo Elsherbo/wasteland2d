@@ -50,6 +50,12 @@ public:
     bool isOpen() const { return open_; }
     void setOpen(bool open) { 
         LOG_INFO(engine::LogCategory::Core, "PauseMenu setOpen: {} -> {}", open_, open);
+        if (open && !open_ && window_) {
+            // Rebuild UI when opening to get current window size
+            int w, h;
+            SDL_GetWindowSize(window_->handle(), &w, &h);
+            rebuildUI(w, h);
+        }
         open_ = open; 
     }
     void toggle() { open_ = !open_; }

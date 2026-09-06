@@ -103,12 +103,9 @@ void PauseMenu::buildUI(int screenWidth, int screenHeight) {
     fullscreenCheckbox->onCheckedChanged = [this](bool checked) {
         if (window_) {
             window_->setFullscreen(checked);
-            // Rebuild UI after fullscreen change to handle new dimensions
-            if (window_->handle()) {
-                int w, h;
-                SDL_GetWindowSize(window_->handle(), &w, &h);
-                rebuildUI(w, h);
-            }
+            // Note: Don't rebuild UI immediately during fullscreen change
+            // This can cause renderer conflicts. The UI will be rebuilt
+            // next time the menu is opened, or we could add a delayed rebuild.
         }
     };
     graphicsSection->addChild(std::move(fullscreenCheckbox));
