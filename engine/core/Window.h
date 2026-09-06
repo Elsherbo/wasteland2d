@@ -24,11 +24,21 @@ public:
     void clear(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
     void present();
 
+    // VSync control
+    void setVSync(bool enabled);
+    bool getVSync() const { return vsync_; }
+
+    // Fullscreen control
+    void setFullscreen(bool enabled);
+    bool isFullscreen() const { return fullscreen_; }
+
 private:
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     int width_ = 0;
     int height_ = 0;
+    bool vsync_ = true;  // Default to vsync enabled
+    bool fullscreen_ = false;
 };
 
 } // namespace engine
